@@ -6,9 +6,10 @@ export async function PATCH(request:Request){
   let data:{id?:string;action?:string;date?:string;time?:string};try{data=await request.json()}catch{return Response.json({error:'Dados inválidos'},{status:400})}
   if(!data.id||!['cancel','reschedule'].includes(data.action||''))return Response.json({error:'Ação inválida'},{status:400});
   try{
-    const database=db();const booking=await database.prepare('SELECT b.date,b.time,b.status,s.duration_min FROM bookings b JOIN services s ON s.id=b.service_id WHERE b.id=? AND b.user_sub=?').bind(data.id,viewer.sub).first<{date:string;time:string;status:string;duration_min:number}>();
+    const database=db();const booking=await database.prepare('SELECT b.date,b.time,b.status,b.payment_status,s.duration_min FROM bookings b JOIN services s ON s.id=b.service_id WHERE b.id=? AND b.user_sub=?').bind(data.id,viewer.sub).first<{date:string;time:string;status:string;payment_status:string;duration_min:number}>();
     if(!booking)return Response.json({error:'Agendamento não encontrado'},{status:404});
     if(booking.status==='CANCELLED')return Response.json({error:'Agendamento cancelado'},{status:409});
+    if(data.action==='cancel'&&booking.payment_status==='PAID')return Response.json({error:'Pagamento aprovado. Solicite o cancelamento diretamente ao estabelecimento para combinar o reembolso.'},{status:409});
     if(booking.date<dayInSalon()||booking.date===dayInSalon()&&Number(booking.time.slice(0,2))*60+Number(booking.time.slice(3))<=minuteInSalon())return Response.json({error:'O atendimento já começou ou passou'},{status:409});
     if(data.action==='cancel'){
       await database.batch([database.prepare("UPDATE bookings SET status='CANCELLED' WHERE id=? AND user_sub=? AND status<>'CANCELLED'").bind(data.id,viewer.sub),database.prepare('DELETE FROM booked_slots WHERE booking_id=?').bind(data.id)]);

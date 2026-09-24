@@ -1,0 +1,11 @@
+'use client';
+import { useEffect, useState } from 'react';
+type Item = { id:string; title:string; category:string; active:number };
+export default function PortfolioPanel() {
+  const [items,setItems]=useState<Item[]>([]),[title,setTitle]=useState(''),[category,setCategory]=useState(''),[alt,setAlt]=useState(''),[file,setFile]=useState<File|null>(null),[message,setMessage]=useState('');
+  async function load(){const response=await fetch('/api/admin/portfolio');const data=await response.json();if(Array.isArray(data))setItems(data)}
+  useEffect(()=>{void load()},[]);
+  async function add(event:React.FormEvent){event.preventDefault();if(!file)return;const form=new FormData();form.set('file',file);form.set('title',title);form.set('category',category);form.set('alt',alt);const response=await fetch('/api/admin/portfolio',{method:'POST',body:form});const data:{error?:string}=await response.json();setMessage(response.ok?'Trabalho salvo.':data.error||'Falha ao salvar.');if(response.ok){setTitle('');setCategory('');setAlt('');setFile(null);void load()}}
+  async function toggle(item:Item){const response=await fetch('/api/admin/portfolio',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id:item.id,active:!item.active})});setMessage(response.ok?'Visibilidade atualizada.':'Falha ao atualizar.');void load()}
+  return <section className="form-panel full"><h2>Portfólio</h2><form className="stack" onSubmit={add}><label>Título<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Categoria<input required maxLength={60} value={category} onChange={e=>setCategory(e.target.value)}/></label><label>Descrição da imagem<input maxLength={200} value={alt} onChange={e=>setAlt(e.target.value)}/></label><label>Imagem JPG, PNG ou WebP<input required type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setFile(e.target.files?.[0]||null)}/></label><button className="button" type="submit">Adicionar trabalho</button></form><ul className="admin-list">{items.map(item=><li key={item.id}><strong>{item.title}</strong> · {item.category} <button type="button" onClick={()=>void toggle(item)}>{item.active?'Ocultar':'Exibir'}</button></li>)}</ul>{message&&<p role="status">{message}</p>}</section>;
+}
