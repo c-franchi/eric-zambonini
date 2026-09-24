@@ -22,12 +22,14 @@ export async function POST(request: Request) {
     if (slotsFor(time, chosen.duration_min).some(slot => blocked.results.some(row => row.slot === slot))) return Response.json({error:'Horário bloqueado. Escolha outro.'},{status:409});
     const id = crypto.randomUUID();
     await database.batch([
-      database.prepare('INSERT INTO bookings (id, service_id, user_sub, date, time, name, phone, status, created_at, price_cents, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', new Date().toISOString(),chosen.price_cents,payload.payment_method||'IN_PERSON','PENDING'),
+      database.prepare(`INSERT INTO bookings (id, service_id, user_sub, date, time, name, phone, status, created_at, price_cents, payment_method, payment_status)
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS
+        (SELECT 1 FROM blocked_slots WHERE date = ? AND slot IN (${slotsFor(time,chosen.duration_min).map(()=>'?').join(',')}))`).bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', new Date().toISOString(),chosen.price_cents,payload.payment_method||'IN_PERSON','PENDING',date,...slotsFor(time,chosen.duration_min)),
       ...slotsFor(time, chosen.duration_min).map((slot) => database.prepare('INSERT INTO booked_slots (booking_id, date, slot) VALUES (?, ?, ?)').bind(id, date, slot)),
     ]);
     return Response.json({ id }, { status: 201 });
   } catch (error) {
-    if (String(error).includes('UNIQUE constraint')) return Response.json({ error: 'Esse horário acabou de ser reservado. Escolha outro.' }, { status: 409 });
+    if (/UNIQUE constraint|FOREIGN KEY constraint/.test(String(error))) return Response.json({ error: 'Esse horário acabou de ser reservado ou bloqueado. Escolha outro.' }, { status: 409 });
     return unavailable();
   }
 }
