@@ -1,4 +1,4 @@
-export type Service = { id: string; name: string; description: string | null; duration_min: number; price_cents: number };
+export type Service = { id: string; name: string; description: string | null; duration_min: number; price_cents: number; allow_in_person_payment: number };
 export const TZ = 'America/Sao_Paulo';
 export function dayInSalon() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());

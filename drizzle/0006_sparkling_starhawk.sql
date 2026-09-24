@@ -1,0 +1,1 @@
+ALTER TABLE `services` ADD `allow_in_person_payment` integer DEFAULT true NOT NULL;

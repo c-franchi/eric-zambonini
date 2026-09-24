@@ -12,11 +12,12 @@ export async function POST(request: Request) {
   }
   try {
     const database = db();
-    const chosen = await database.prepare('SELECT duration_min, price_cents FROM services WHERE id = ? AND active = 1').bind(service).first<{ duration_min: number; price_cents: number }>();
+    const chosen = await database.prepare('SELECT duration_min, price_cents, allow_in_person_payment FROM services WHERE id = ? AND active = 1').bind(service).first<{ duration_min: number; price_cents: number; allow_in_person_payment: number }>();
     const config = await database.prepare("SELECT value FROM settings WHERE key = 'schedule'").first<{ value: string }>();
     const rules = await database.prepare("SELECT value FROM settings WHERE key = 'booking_rules'").first<{ value: string }>();
     if (!chosen) return Response.json({ error: 'Serviço indisponível.' }, { status: 404 });
     if(payload.payment_method && !['PIX','IN_PERSON'].includes(payload.payment_method))return Response.json({error:'Forma de pagamento inválida.'},{status:400});
+    if((payload.payment_method||'IN_PERSON')==='IN_PERSON'&&!chosen.allow_in_person_payment)return Response.json({error:'Esse serviço requer Pix. Selecione pagamento Pix.'},{status:409});
     if(payload.payment_method==='PIX' && !await database.prepare("SELECT 1 FROM settings WHERE key='pix'").first())return Response.json({error:'Pagamento Pix ainda não configurado. Escolha pagar no atendimento.'},{status:409});
     if (!availableTimes(date, chosen.duration_min, parseSchedule(config?.value), new Set(), parseBookingRules(rules?.value)).includes(time)) return Response.json({ error: 'Horário fora da agenda.' }, { status: 400 });
     const blocked = await database.prepare('SELECT slot FROM blocked_slots WHERE date = ?').bind(date).all<{slot:string}>();

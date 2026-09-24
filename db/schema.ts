@@ -6,6 +6,7 @@ export const services = sqliteTable('services', {
   description: text('description'),
   durationMin: integer('duration_min').notNull(),
   priceCents: integer('price_cents').notNull(),
+  allowInPersonPayment: integer('allow_in_person_payment', {mode:'boolean'}).notNull().default(true),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
 });
 

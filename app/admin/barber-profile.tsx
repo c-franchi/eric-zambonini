@@ -1,0 +1,7 @@
+'use client';
+import { useEffect, useState } from 'react';
+export default function BarberProfilePanel(){const [name,setName]=useState(''),[bio,setBio]=useState(''),[years,setYears]=useState(''),[message,setMessage]=useState('');
+ useEffect(()=>{fetch('/api/admin/profile').then(r=>r.json() as Promise<{name?:string;bio:string;yearsExperience:number}>).then(data=>{if(data.name){setName(data.name);setBio(data.bio);setYears(String(data.yearsExperience))}}).catch(()=>{})},[]);
+ async function save(event:React.FormEvent){event.preventDefault();const response=await fetch('/api/admin/profile',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({name,bio,yearsExperience:Number(years)})});const data:{error?:string}=await response.json();setMessage(response.ok?'Perfil público salvo. Confira a página inicial em Ver site.':data.error||'Falha ao salvar.')}
+ return <section className="form-panel"><h2>Perfil público do profissional</h2><form className="stack" onSubmit={save}><label>Nome público<input required maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></label><label>Biografia<textarea required maxLength={1000} rows={5} value={bio} onChange={e=>setBio(e.target.value)}/></label><label>Anos de experiência<input type="number" min={0} max={90} required value={years} onChange={e=>setYears(e.target.value)} placeholder="Ex.: 25"/></label><button className="button" type="submit">Salvar perfil público</button></form>{message&&<p role="status">{message}</p>}</section>
+}

@@ -43,6 +43,13 @@
       "when": 1790270437486,
       "tag": "0005_safe_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790279987794,
+      "tag": "0006_sparkling_starhawk",
+      "breakpoints": true
     }
   ]
 }
