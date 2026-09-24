@@ -38,3 +38,9 @@ export const bookedSlots = sqliteTable('booked_slots', {
   date: text('date').notNull(),
   slot: text('slot').notNull(),
 }, (table) => [uniqueIndex('booked_slots_date_slot').on(table.date, table.slot)]);
+
+export const blockedSlots = sqliteTable('blocked_slots', {
+  date: text('date').notNull(),
+  slot: text('slot').notNull(),
+  reason: text('reason'),
+}, (table) => [uniqueIndex('blocked_slots_date_slot').on(table.date, table.slot)]);

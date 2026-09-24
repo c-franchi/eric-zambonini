@@ -16,6 +16,8 @@ export async function POST(request: Request) {
     const config = await database.prepare("SELECT value FROM settings WHERE key = 'schedule'").first<{ value: string }>();
     if (!chosen) return Response.json({ error: 'Serviço indisponível.' }, { status: 404 });
     if (!availableTimes(date, chosen.duration_min, parseSchedule(config?.value), new Set()).includes(time)) return Response.json({ error: 'Horário fora da agenda.' }, { status: 400 });
+    const blocked = await database.prepare('SELECT slot FROM blocked_slots WHERE date = ?').bind(date).all<{slot:string}>();
+    if (slotsFor(time, chosen.duration_min).some(slot => blocked.results.some(row => row.slot === slot))) return Response.json({error:'Horário bloqueado. Escolha outro.'},{status:409});
     const id = crypto.randomUUID();
     await database.batch([
       database.prepare('INSERT INTO bookings (id, service_id, user_sub, date, time, name, phone, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', new Date().toISOString()),

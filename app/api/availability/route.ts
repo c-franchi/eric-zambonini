@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     if (!row) return Response.json({ error: 'Serviço indisponível.' }, { status: 404 });
     const [settings, used] = await Promise.all([
       database.prepare("SELECT value FROM settings WHERE key = 'schedule'").first<{ value: string }>(),
-      database.prepare('SELECT slot FROM booked_slots WHERE date = ?').bind(date).all<{ slot: string }>(),
+      database.prepare('SELECT slot FROM booked_slots WHERE date = ? UNION SELECT slot FROM blocked_slots WHERE date = ?').bind(date, date).all<{ slot: string }>(),
     ]);
     return Response.json({ times: availableTimes(date, row.duration_min, parseSchedule(settings?.value), new Set(used.results.map((x) => x.slot))) });
   } catch { return unavailable(); }

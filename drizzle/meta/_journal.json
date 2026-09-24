@@ -15,6 +15,13 @@
       "when": 1790266892292,
       "tag": "0001_lowly_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790267327451,
+      "tag": "0002_steady_bromley",
+      "breakpoints": true
     }
   ]
 }
