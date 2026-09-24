@@ -8,11 +8,12 @@ Este é o novo projeto independente do Lovable e do Supabase. A aplicação anti
 - Serviços, horários de atendimento e reservas gravados no banco D1 do Site.
 - Bloqueio de reservas concorrentes em intervalos de 15 minutos por índice único.
 - Gestão privada de serviços, expediente e agenda, restrita ao proprietário.
+- Login com Google em teste: ID token validado no servidor, sessão segura por cookie e agendamentos vinculados ao identificador Google da conta.
 - A aplicação está privada e em validação. Não divulgar a clientes nesta etapa.
 
 ## Próximas etapas antes da operação
 
-1. Configurar autenticação pública de clientes com Google OAuth, validar o fluxo de autorização suportado pelo Sites e vincular identidade a cada reserva. Definir redirecionamento após login para o painel do cliente.
+1. Testar o login Google com contas de teste no Site privado, validar abertura do painel, persistência da sessão, isolamento dos agendamentos e saída. Liberar acesso público somente depois das demais funções.
 2. Migrar painel do cliente: próximos atendimentos, histórico, cancelamento e perfil, com autorização por identidade em cada operação.
 3. Migrar painel administrativo completo: edição de serviços, exceções e bloqueios, configurações, portfólio e gestão de usuários.
 4. Migrar pagamentos Pix, comprovantes, regras de confirmação e cancelamento; verificar se há webhook/provedor externo ainda necessário.

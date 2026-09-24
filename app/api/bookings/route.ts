@@ -1,7 +1,9 @@
-import { db, ownerOnly, unavailable } from '@/lib/server';
+import { db, unavailable } from '@/lib/server';
+import { getViewer } from '@/lib/auth';
 import { availableTimes, parseSchedule, slotsFor, validDate } from '@/lib/booking';
 export async function POST(request: Request) {
-  if (!await ownerOnly()) return Response.json({ error: 'Acesso restrito neste período de testes.' }, { status: 401 });
+  const viewer = await getViewer();
+  if (!viewer) return Response.json({ error: 'Entre com Google para confirmar seu horário.' }, { status: 401 });
   let payload: { service?: string; date?: string; time?: string; name?: string; phone?: string };
   try { payload = await request.json(); } catch { return Response.json({ error: 'Dados inválidos.' }, { status: 400 }); }
   const { service, date, time, name, phone } = payload;
@@ -16,7 +18,7 @@ export async function POST(request: Request) {
     if (!availableTimes(date, chosen.duration_min, parseSchedule(config?.value), new Set()).includes(time)) return Response.json({ error: 'Horário fora da agenda.' }, { status: 400 });
     const id = crypto.randomUUID();
     await database.batch([
-      database.prepare('INSERT INTO bookings (id, service_id, date, time, name, phone, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(id, service, date, time, name.trim(), phone.trim(), 'CONFIRMED', new Date().toISOString()),
+      database.prepare('INSERT INTO bookings (id, service_id, user_sub, date, time, name, phone, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', new Date().toISOString()),
       ...slotsFor(time, chosen.duration_min).map((slot) => database.prepare('INSERT INTO booked_slots (booking_id, date, slot) VALUES (?, ?, ?)').bind(id, date, slot)),
     ]);
     return Response.json({ id }, { status: 201 });

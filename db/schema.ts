@@ -14,9 +14,17 @@ export const settings = sqliteTable('settings', {
   value: text('value').notNull(),
 });
 
+export const users = sqliteTable('users', {
+  sub: text('sub').primaryKey(),
+  email: text('email').notNull(),
+  name: text('name').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
 export const bookings = sqliteTable('bookings', {
   id: text('id').primaryKey(),
   serviceId: text('service_id').notNull().references(() => services.id),
+  userSub: text('user_sub').references(() => users.sub),
   date: text('date').notNull(),
   time: text('time').notNull(),
   name: text('name').notNull(),
