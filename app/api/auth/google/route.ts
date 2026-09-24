@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   if (!body.csrf || !cookieCsrf || body.csrf !== cookieCsrf || typeof body.credential !== 'string' || body.credential.length > 10000) return Response.json({ error:'Verificação de segurança inválida.' }, { status:403 });
   try {
     const viewer = await verifyGoogleCredential(body.credential);
-    await db().prepare('INSERT INTO users (sub, email, name, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(sub) DO UPDATE SET email = excluded.email, name = excluded.name').bind(viewer.sub, viewer.email, viewer.name, new Date().toISOString()).run();
+    await db().prepare('INSERT INTO users (sub, email, name, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(sub) DO UPDATE SET email = excluded.email').bind(viewer.sub, viewer.email, viewer.name, new Date().toISOString()).run();
     const token = await createSession(viewer);
     return new Response(JSON.stringify({ ok:true, name:viewer.name }), { headers: { 'content-type':'application/json', 'cache-control':'no-store', 'set-cookie':`${sessionCookie}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=604800` } });
   } catch { return Response.json({ error:'Não foi possível validar a conta Google. Tente novamente.' }, { status:401 }); }

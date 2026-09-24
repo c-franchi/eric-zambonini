@@ -18,6 +18,7 @@ export const users = sqliteTable('users', {
   sub: text('sub').primaryKey(),
   email: text('email').notNull(),
   name: text('name').notNull(),
+  phone: text('phone'),
   createdAt: text('created_at').notNull(),
 });
 
