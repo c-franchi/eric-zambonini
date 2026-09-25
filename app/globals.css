@@ -148,3 +148,4 @@ body {
 @media(max-width:560px){.admin-summary{grid-template-columns:1fr}.admin-form-two{grid-template-columns:1fr}.admin-heading{align-items:flex-end}.admin-open-site{white-space:nowrap}.admin-heading h1{font-size:34px}}
 .finance-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:24px 0}.finance-summary>div{border:1px solid #3d3932;background:#151412;padding:18px;display:grid;gap:8px;border-radius:5px}.finance-summary span{color:#bdb6a9}.finance-summary strong{font:400 26px Georgia,serif;color:#d4b476}
 .form-panel label.admin-checkbox{display:flex;align-items:center;gap:10px}.form-panel .admin-checkbox input{width:18px;height:18px;min-height:18px;accent-color:#c9a76a}
+.interleaved{border:1px solid #5b554b;padding:14px;border-radius:5px;display:grid;gap:8px}.interleaved legend{color:#d4b476;font-weight:700}.interleaved p{margin:0 0 5px}

@@ -8,7 +8,7 @@ import ServiceEditor from './service-editor';
 import Profile from '@/app/cliente/profile';
 import BarberProfilePanel from './barber-profile';
 
-type Service={id:string;name:string;description:string|null;duration_min:number;price_cents:number;active:number;allow_in_person_payment:number};
+type Service={id:string;name:string;description:string|null;duration_min:number;price_cents:number;active:number;allow_in_person_payment:number;interleaved_blocks:string|null};
 type Booking={id:string;date:string;time:string;name:string;phone:string;status:string;service_name:string;price_cents:number;payment_method:string;payment_status:string;receipt_key:string|null};
 const days=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const money=(cents:number)=>(cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});

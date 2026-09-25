@@ -1,4 +1,23 @@
-export type Service = { id: string; name: string; description: string | null; duration_min: number; price_cents: number; allow_in_person_payment: number };
+export type Service = { id: string; name: string; description: string | null; duration_min: number; price_cents: number; allow_in_person_payment: number; interleaved_blocks: string | null };
+export type TimeBlock = { start_min:number; duration_min:number; blocked:boolean };
+export function validBlocks(blocks:unknown,duration:number):blocks is TimeBlock[] {
+  if(!Array.isArray(blocks)||blocks.length<1||blocks.length>32||!Number.isInteger(duration)||duration<15||duration>480)return false;
+  let offset=0;
+  for(const block of blocks){
+    if(!block||typeof block!=='object'||block.start_min!==offset||!Number.isInteger(block.duration_min)||block.duration_min<15||block.duration_min%15!==0||typeof block.blocked!=='boolean')return false;
+    offset+=block.duration_min;
+  }
+  return offset===duration&&blocks[0].blocked;
+}
+export function parseBlocks(value:string|null|undefined,duration:number):TimeBlock[]|null {
+  if(!value)return null;
+  try{const blocks=JSON.parse(value);return validBlocks(blocks,duration)?blocks:null}catch{return null}
+}
+export function occupiedSlotsFor(time:string,duration:number,blocks:TimeBlock[]|null=null):string[] {
+  if(!blocks)return slotsFor(time,duration);
+  const start=Number(time.slice(0,2))*60+Number(time.slice(3));
+  return blocks.filter(block=>block.blocked).flatMap(block=>slotsFor(`${String(Math.floor((start+block.start_min)/60)).padStart(2,'0')}:${String((start+block.start_min)%60).padStart(2,'0')}`,block.duration_min));
+}
 export const TZ = 'America/Sao_Paulo';
 export function dayInSalon() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -17,7 +36,13 @@ export function parseBookingRules(value: string | undefined | null): BookingRule
   return defaultBookingRules;
 }
 export function salonTimeStamp(date: string, time: string) {
-  return Date.parse(`${date}T${time}:00-03:00`);
+  const localAsUtc=Date.parse(`${date}T${time}:00Z`);
+  if(Number.isNaN(localAsUtc))return NaN;
+  const zone=new Intl.DateTimeFormat('en-US',{timeZone:TZ,timeZoneName:'shortOffset'}).formatToParts(new Date(localAsUtc)).find(part=>part.type==='timeZoneName')?.value||'';
+  const match=/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(zone);
+  if(!match)throw new Error('Fuso horário indisponível');
+  const offset=(Number(match[2])*60+Number(match[3]||0))*60000*(match[1]==='+'?1:-1);
+  return localAsUtc-offset;
 }
 export function validDate(date: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
@@ -32,7 +57,7 @@ export function slotsFor(time: string, duration: number) {
     return `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`;
   });
 }
-export function availableTimes(date: string, duration: number, schedule: Record<string, [string, string] | null>, occupied: Set<string>, rules: BookingRules = defaultBookingRules) {
+export function availableTimes(date: string, duration: number, schedule: Record<string, [string, string] | null>, occupied: Set<string>, rules: BookingRules = defaultBookingRules, blocks:TimeBlock[]|null=null) {
   if (!validDate(date) || date < dayInSalon() || duration <= 0) return [];
   if ((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${dayInSalon()}T12:00:00Z`)) / 86400000 > rules.maxDays) return [];
   const range = schedule[String(weekday(date))];
@@ -44,7 +69,7 @@ export function availableTimes(date: string, duration: number, schedule: Record<
     if (date === dayInSalon() && min <= minuteInSalon()) continue;
     const label = `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
     if (salonTimeStamp(date, label) < Date.now() + rules.minHours * 3600000) continue;
-    if (slotsFor(label, duration).every((slot) => !occupied.has(slot))) times.push(label);
+    if (occupiedSlotsFor(label,duration,blocks).every((slot) => !occupied.has(slot))) times.push(label);
   }
   return times;
 }

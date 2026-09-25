@@ -1,0 +1,1 @@
+ALTER TABLE `services` ADD `interleaved_blocks` text;
