@@ -3,6 +3,7 @@ import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core
 export const services = sqliteTable('services', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  icon: text('icon'),
   description: text('description'),
   durationMin: integer('duration_min').notNull(),
   interleavedBlocks: text('interleaved_blocks'),

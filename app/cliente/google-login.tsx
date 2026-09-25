@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import Script from 'next/script';
 
 declare global { interface Window { google?: { accounts:{ id:{ initialize:(options:{client_id:string;callback:(response:{credential:string})=>void;ux_mode:string})=>void; renderButton:(el:HTMLElement,options:Record<string,unknown>)=>void } } } } }
-export default function GoogleLogin({clientId,redirectTo='/cliente'}:{clientId:string;redirectTo?:'/cliente'|'/admin'}){
+export default function GoogleLogin({clientId,redirectTo='/cliente'}:{clientId:string;redirectTo?:string}){
   const button=useRef<HTMLDivElement>(null),[error,setError]=useState('');
   async function authenticate(response:{credential:string}){
     setError('');

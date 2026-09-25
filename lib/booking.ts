@@ -1,4 +1,4 @@
-export type Service = { id: string; name: string; description: string | null; duration_min: number; price_cents: number; allow_in_person_payment: number; interleaved_blocks: string | null };
+export type Service = { id: string; name: string; icon?: string | null; description: string | null; duration_min: number; price_cents: number; allow_in_person_payment: number; interleaved_blocks: string | null };
 export type TimeBlock = { start_min:number; duration_min:number; blocked:boolean };
 export function validBlocks(blocks:unknown,duration:number):blocks is TimeBlock[] {
   if(!Array.isArray(blocks)||blocks.length<1||blocks.length>32||!Number.isInteger(duration)||duration<15||duration>480)return false;
