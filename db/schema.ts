@@ -20,9 +20,16 @@ export const settings = sqliteTable('settings', {
 export const users = sqliteTable('users', {
   sub: text('sub').primaryKey(),
   email: text('email').notNull(),
+  passwordHash: text('password_hash'),
   name: text('name').notNull(),
   phone: text('phone'),
   createdAt: text('created_at').notNull(),
+});
+
+export const authAttempts = sqliteTable('auth_attempts', {
+  email: text('email').primaryKey(),
+  failures: integer('failures').notNull().default(0),
+  windowStarted: integer('window_started').notNull(),
 });
 
 export const bookings = sqliteTable('bookings', {

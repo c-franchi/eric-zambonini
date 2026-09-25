@@ -1,8 +1,8 @@
-import { Brush, Droplets, Eye, Paintbrush, Scissors, Sparkles, UserRound, Waves } from 'lucide-react';
+import { Droplets, Eye, Palette, Scissors, Sparkles, Waves } from 'lucide-react';
 
 export const iconChoices = [
-  { id: 'scissors', label: 'Tesoura' },
-  { id: 'brush', label: 'Escova' },
+  { id: 'scissors', label: 'Corte · tesoura' },
+  { id: 'brush', label: 'Escova capilar' },
   { id: 'beard', label: 'Barba' },
   { id: 'color', label: 'Coloração' },
   { id: 'eyebrow', label: 'Sobrancelhas' },
@@ -28,9 +28,9 @@ export function serviceIconFor(icon: string | null | undefined, name: string): S
 export function ServiceIcon({icon, name, size=27}:{icon?:string|null;name:string;size?:number}) {
   const props={size,'aria-hidden':true as const};
   switch(serviceIconFor(icon,name)) {
-    case 'brush': return <Brush {...props}/>;
-    case 'beard': return <UserRound {...props}/>;
-    case 'color': return <Paintbrush {...props}/>;
+    case 'brush': return <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m7 26 9-9m-6-5 9-9 10 10-9 9z"/><path d="m14 8 9 9M17 5l9 9m-16 1-3 3m6-2-3 3m6-2-3 3"/></svg>;
+    case 'beard': return <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 13V9a9 9 0 0 1 18 0v4m-18 0c-2 2-2 7 1 9 1 4 4 7 8 8 4-1 7-4 8-8 3-2 3-7 1-9"/><path d="M9 18c3 0 4-2 7 0 3-2 4 0 7 0m-11 5c2 1 6 1 8 0m-7-11h.1m6 0h.1"/></svg>;
+    case 'color': return <Palette {...props}/>;
     case 'eyebrow': return <Eye {...props}/>;
     case 'waves': return <Waves {...props}/>;
     case 'care': return <Droplets {...props}/>;
