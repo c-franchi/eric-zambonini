@@ -1,7 +1,15 @@
 import { db, ownerOnly, unavailable } from '@/lib/server';
-export async function GET() {
+export async function GET(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
-  try { const result = await db().prepare('SELECT b.id, b.date, b.time, b.name, b.phone, b.status, b.price_cents, b.payment_method, b.payment_status, b.receipt_key, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id ORDER BY b.date DESC, b.time DESC LIMIT 200').all(); return Response.json(result.results); } catch { return unavailable(); }
+  const month = new URL(request.url).searchParams.get('month');
+  if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return Response.json({ error: 'Mês inválido' }, { status: 400 });
+  try {
+    const query = `SELECT b.id, b.date, b.time, b.name, b.phone, b.status, b.price_cents, b.payment_method, b.payment_status, b.receipt_key, b.user_sub, u.email, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id LEFT JOIN users u ON u.sub=b.user_sub`;
+    const result = month
+      ? await db().prepare(`${query} WHERE b.date >= ? AND b.date < ? ORDER BY b.date, b.time`).bind(`${month}-01`, new Date(Date.UTC(Number(month.slice(0,4)), Number(month.slice(5)), 1)).toISOString().slice(0,10)).all()
+      : await db().prepare(`${query} ORDER BY b.date DESC, b.time DESC LIMIT 200`).all();
+    return Response.json(result.results, { headers: { 'cache-control': 'no-store' } });
+  } catch { return unavailable(); }
 }
 export async function PATCH(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });

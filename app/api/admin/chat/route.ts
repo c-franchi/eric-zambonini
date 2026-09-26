@@ -2,7 +2,7 @@ import { db, ownerOnly, unavailable } from '@/lib/server';
 export async function GET(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   const sub = new URL(request.url).searchParams.get('sub');
-  try { return Response.json(sub ? (await db().prepare('SELECT id,sender,body,created_at FROM messages WHERE user_sub=? ORDER BY created_at DESC LIMIT 100').bind(sub).all()).results.reverse() : (await db().prepare('SELECT u.sub,u.name,u.email,MAX(m.created_at) AS latest FROM messages m JOIN users u ON u.sub=m.user_sub GROUP BY u.sub ORDER BY latest DESC LIMIT 100').all()).results); } catch { return unavailable(); }
+  try { return Response.json(sub ? (await db().prepare('SELECT id,sender,body,created_at FROM messages WHERE user_sub=? ORDER BY created_at DESC LIMIT 100').bind(sub).all()).results.reverse() : (await db().prepare('SELECT u.sub,u.name,u.email,MAX(m.created_at) AS latest FROM users u LEFT JOIN messages m ON m.user_sub=u.sub WHERE EXISTS(SELECT 1 FROM bookings b WHERE b.user_sub=u.sub) OR m.id IS NOT NULL GROUP BY u.sub ORDER BY latest DESC, u.name LIMIT 500').all()).results); } catch { return unavailable(); }
 }
 export async function POST(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
