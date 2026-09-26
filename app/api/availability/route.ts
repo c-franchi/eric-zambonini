@@ -1,11 +1,13 @@
 import { db, unavailable } from '@/lib/server';
 import { availableTimes, parseSchedule, parseBookingRules, parseBlocks, validDate } from '@/lib/booking';
 import { getViewer } from '@/lib/auth';
+import { expireUnpaidPix } from '@/lib/pix-expiry';
 export async function GET(request: Request) {
   const url = new URL(request.url), service = url.searchParams.get('service'), date = url.searchParams.get('date') || '', month = url.searchParams.get('month');
   if (!service || (month ? !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) : !validDate(date))) return Response.json({ error: 'Selecione serviço e data válidos.' }, { status: 400 });
   try {
     const database = db();
+    await expireUnpaidPix(database);
     const exclude = url.searchParams.get('exclude');
     const viewer = exclude ? await getViewer() : null;
     const ownBooking = exclude && viewer ? await database.prepare('SELECT id FROM bookings WHERE id=? AND user_sub=? AND status<>?').bind(exclude,viewer.sub,'CANCELLED').first<{id:string}>() : null;
