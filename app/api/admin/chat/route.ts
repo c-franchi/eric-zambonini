@@ -1,4 +1,5 @@
 import { db, ownerOnly, unavailable } from '@/lib/server';
+import { sendPush } from '@/lib/push';
 export async function GET(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   const sub = new URL(request.url).searchParams.get('sub');
@@ -8,5 +9,5 @@ export async function POST(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   let data: { sub?: string; body?: string }; try { data = await request.json(); } catch { return Response.json({ error: 'Dados inválidos' }, { status: 400 }); }
   if (!data.sub || !data.body?.trim() || data.body.length > 2000) return Response.json({ error: 'Mensagem inválida' }, { status: 400 });
-  try { await db().prepare('INSERT INTO messages(id,user_sub,sender,body,created_at) VALUES(?,?,?,?,?)').bind(crypto.randomUUID(),data.sub,'OWNER',data.body.trim(),new Date().toISOString()).run(); return Response.json({ ok: true }, { status: 201 }); } catch { return unavailable(); }
+  try { const id=crypto.randomUUID();await db().prepare('INSERT INTO messages(id,user_sub,sender,body,created_at) VALUES(?,?,?,?,?)').bind(id,data.sub,'OWNER',data.body.trim(),new Date().toISOString()).run(); await sendPush(data.sub,id,'Mensagem do Eric',data.body.trim(),'/cliente').catch(()=>{});return Response.json({ ok: true }, { status: 201 }); } catch { return unavailable(); }
 }

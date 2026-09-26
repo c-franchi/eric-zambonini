@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { db } from '@/lib/server';
+import { sendOwnerPush } from '@/lib/push';
 
 const runtime=()=>env as unknown as Record<string,string|undefined>;
 export type NotificationSettings={to:string;from:string};
@@ -12,6 +13,8 @@ export function notificationInsert(database:ReturnType<typeof db>,kind:string,ti
  return database.prepare('INSERT INTO owner_notifications(id,kind,title,body,link,created_at) VALUES(?,?,?,?,?,?)').bind(crypto.randomUUID(),kind,title,body,link,new Date().toISOString());
 }
 export async function deliverOwnerNotifications(){
+ const recent=(await db().prepare('SELECT id,title,body,link FROM owner_notifications WHERE created_at>? ORDER BY created_at DESC LIMIT 20').bind(new Date(Date.now()-86400000).toISOString()).all<{id:string;title:string;body:string;link:string}>()).results;
+ await Promise.all(recent.map(item=>sendOwnerPush(item.id,item.title,item.body,item.link)));
  const key=runtime().RESEND_API_KEY;
  if(!key)return;
  const settings=await notificationSettings();

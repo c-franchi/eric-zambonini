@@ -93,3 +93,16 @@ export const ownerNotifications = sqliteTable('owner_notifications', {
   lastAttemptAt: text('last_attempt_at'),
   emailError: text('email_error'),
 });
+
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+ endpoint: text('endpoint').primaryKey(),
+ userSub: text('user_sub').notNull().references(() => users.sub, {onDelete:'cascade'}),
+ p256dh: text('p256dh').notNull(),
+ auth: text('auth').notNull(),
+ createdAt: text('created_at').notNull(),
+});
+export const pushDeliveries = sqliteTable('push_deliveries', {
+ id: text('id').primaryKey(),
+ endpoint: text('endpoint').notNull(),
+ createdAt: text('created_at').notNull(),
+});

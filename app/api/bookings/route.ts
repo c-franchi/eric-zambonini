@@ -4,6 +4,7 @@ import { availableTimes, parseSchedule, parseBookingRules, parseBlocks, occupied
 import { expireUnpaidPix, pixExpiresAt } from '@/lib/pix-expiry';
 import { ensureServiceCatalog } from '@/lib/service-catalog';
 import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
+import { sendPush } from '@/lib/push';
 export async function POST(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: 'Entre com Google para confirmar seu horário.' }, { status: 401 });
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
       notificationInsert(database,'BOOKING',isPix?'Nova reserva aguardando Pix':'Novo agendamento',`${name.trim()} reservou ${chosen.name} para ${date.split('-').reverse().join('/')} às ${time}. Telefone: ${phone.trim()}. ${isPix?'Aguardando pagamento e comprovante Pix.':chosen.price_variable?'Valor a combinar.':'Pagamento no atendimento.'}`,`/admin/agenda?date=${date}`),
     ]);
     await deliverOwnerNotifications().catch(()=>{});
+    await sendPush(viewer.sub,id,'Horário reservado',`${chosen.name} em ${date.split('-').reverse().join('/')} às ${time}.${isPix?' Pague o Pix em até 15 minutos para manter a reserva.':''}`,'/cliente').catch(()=>{});
     return Response.json({ id,expiresAt:isPix?pixExpiresAt(createdAt):null }, { status: 201 });
   } catch (error) {
     if (/UNIQUE constraint|FOREIGN KEY constraint/.test(String(error))) return Response.json({ error: 'Esse horário acabou de ser reservado ou bloqueado. Escolha outro.' }, { status: 409 });

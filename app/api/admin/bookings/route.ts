@@ -1,5 +1,6 @@
 import { db, ownerOnly, unavailable } from '@/lib/server';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
+import { sendPush } from '@/lib/push';
 export async function GET(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   const month = new URL(request.url).searchParams.get('month');
@@ -20,7 +21,7 @@ export async function PATCH(request: Request) {
   if (!data.id || !['cancel','paid','quote'].includes(data.action || '') || data.action==='quote'&&(!Number.isInteger(data.price_cents)||data.price_cents!<=0||data.price_cents!>10000000)) return Response.json({ error: 'Ação inválida' }, { status: 400 });
   try {
     const database = db();
-    const row = await database.prepare('SELECT status,payment_method,payment_status,price_variable FROM bookings WHERE id=?').bind(data.id).first<{status:string;payment_method:string;payment_status:string;price_variable:number}>();
+    const row = await database.prepare('SELECT status,payment_method,payment_status,price_variable,user_sub,date,time FROM bookings WHERE id=?').bind(data.id).first<{status:string;payment_method:string;payment_status:string;price_variable:number;user_sub:string|null;date:string;time:string}>();
     if (!row) return Response.json({ error: 'Reserva não encontrada' }, { status: 404 });
     if (data.action === 'cancel') {
       if (row.payment_status === 'PAID') return Response.json({ error: 'Pagamento aprovado: resolva o reembolso antes de cancelar.' }, { status: 409 });
@@ -33,6 +34,7 @@ export async function PATCH(request: Request) {
       if(row.price_variable)return Response.json({error:'Defina o valor combinado antes de marcar como pago.'},{status:409});
       await database.prepare("UPDATE bookings SET payment_status='PAID' WHERE id=?").bind(data.id).run();
     }
+    if(row.user_sub)await sendPush(row.user_sub,`${data.id}:${data.action}`,data.action==='cancel'?'Agendamento cancelado':data.action==='quote'?'Valor do serviço atualizado':'Pagamento confirmado',data.action==='cancel'?`O horário de ${row.date.split('-').reverse().join('/')} às ${row.time} foi cancelado.`:'Confira os detalhes no aplicativo.','/cliente').catch(()=>{});
     return Response.json({ ok: true });
   } catch { return unavailable(); }
 }
