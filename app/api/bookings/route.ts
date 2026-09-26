@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS
         (SELECT 1 FROM blocked_slots WHERE date = ? AND slot IN (${occupiedSlots.map(()=>'?').join(',')}))`).bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', new Date().toISOString(),chosen.price_cents,payload.payment_method||'IN_PERSON','PENDING',date,...occupiedSlots),
       ...occupiedSlots.map((slot) => database.prepare('INSERT INTO booked_slots (booking_id, date, slot) VALUES (?, ?, ?)').bind(id, date, slot)),
+      database.prepare('UPDATE users SET name=?,phone=? WHERE sub=?').bind(name.trim(),phone.trim(),viewer.sub),
     ]);
     return Response.json({ id }, { status: 201 });
   } catch (error) {

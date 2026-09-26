@@ -2,7 +2,7 @@ import { getViewer } from '@/lib/auth';
 import { db, unavailable } from '@/lib/server';
 export async function GET() {
   const viewer=await getViewer();if(!viewer)return Response.json({error:'Entre com Google'},{status:401});
-  try { const user=await db().prepare('SELECT name,email,phone FROM users WHERE sub=?').bind(viewer.sub).first();return Response.json(user||{name:viewer.name,email:viewer.email,phone:''}); } catch { return unavailable(); }
+  try { const database=db();const user=await database.prepare('SELECT name,email,phone FROM users WHERE sub=?').bind(viewer.sub).first<{name:string;email:string;phone:string|null}>();const previous=user?.phone?null:await database.prepare("SELECT phone FROM bookings WHERE user_sub=? AND phone<>'' ORDER BY created_at DESC LIMIT 1").bind(viewer.sub).first<{phone:string}>();return Response.json(user?{...user,phone:user.phone||previous?.phone||''}:{name:viewer.name,email:viewer.email,phone:previous?.phone||''}); } catch { return unavailable(); }
 }
 export async function PATCH(request:Request) {
   const viewer=await getViewer();if(!viewer)return Response.json({error:'Entre com Google'},{status:401});

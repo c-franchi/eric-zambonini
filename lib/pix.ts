@@ -1,4 +1,19 @@
 function field(id: string, value: string) { return id + String(value.length).padStart(2, '0') + value; }
+export type PixSettings = {key:string;name:string;city:string};
+export async function currentPixSettings(database: D1Database): Promise<PixSettings|null> {
+  const row=await database.prepare("SELECT value FROM settings WHERE key='pix'").first<{value:string}>();
+  if(!row)return null;
+  const saved=JSON.parse(row.value) as PixSettings;
+  // Atualiza somente a configuração de testes anterior, preservando alterações posteriores do administrador.
+  if(saved.key==='16 99776-2019'&&saved.name==='Eric zambonini') {
+    const updated={key:'+5516997762016',name:'Eric Henrique Zambonini',city:saved.city||'Araraquara'};
+    const result=await database.prepare("UPDATE settings SET value=? WHERE key='pix' AND value=?").bind(JSON.stringify(updated),row.value).run();
+    if(result.meta.changes)return updated;
+    const latest=await database.prepare("SELECT value FROM settings WHERE key='pix'").first<{value:string}>();
+    return latest?JSON.parse(latest.value) as PixSettings:null;
+  }
+  return saved;
+}
 function crc(input: string) {
   let value = 0xffff;
   for (const char of input) {

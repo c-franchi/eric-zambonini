@@ -1,7 +1,8 @@
 import { db, ownerOnly, unavailable } from '@/lib/server';
+import { currentPixSettings } from '@/lib/pix';
 export async function GET() {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
-  try { const row = await db().prepare("SELECT value FROM settings WHERE key='pix'").first<{ value: string }>(); return Response.json(row ? JSON.parse(row.value) : { key: '', name: '', city: '' }); } catch { return unavailable(); }
+  try { return Response.json(await currentPixSettings(db()) || { key: '', name: '', city: '' }); } catch { return unavailable(); }
 }
 export async function PUT(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });

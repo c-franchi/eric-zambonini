@@ -1,17 +1,40 @@
 'use client';
-import { useState } from 'react';
-export default function ReceiptUpload({ id, status }: { id: string; status: string }) {
-  const [file, setFile] = useState<File | null>(null), [message, setMessage] = useState(''), [busy, setBusy] = useState(false), [code, setCode] = useState('');
-  async function showPix() {
-    try { const response = await fetch(`/api/cliente/pix?id=${encodeURIComponent(id)}`); const data: { code?: string; error?: string } = await response.json(); if (!response.ok) throw Error(data.error || 'Pix indisponível'); setCode(data.code || ''); }
-    catch (error) { setMessage(error instanceof Error ? error.message : 'Pix indisponível'); }
-  }
+import { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
+
+type PixData={code:string;amount:number;key:string;name:string};
+export default function ReceiptUpload({ id, status, immediate=false }: { id: string; status: string; immediate?:boolean }) {
+  const [file, setFile] = useState<File | null>(null), [message, setMessage] = useState(''), [busy, setBusy] = useState(false), [pix, setPix] = useState<PixData|null>(null), [qr,setQr]=useState(''),[visible,setVisible]=useState(immediate),[submitted,setSubmitted]=useState(false);
+  useEffect(()=>{if(!visible||status==='PAID')return;let active=true;fetch(`/api/cliente/pix?id=${encodeURIComponent(id)}`).then(async response=>{const data:PixData&{error?:string}=await response.json();if(!response.ok)throw Error(data.error||'Pix indisponível');return data}).then(async data=>{const image=await QRCode.toDataURL(data.code,{width:240,margin:2,errorCorrectionLevel:'M'});if(active){setPix(data);setQr(image);setMessage('')}}).catch(error=>{if(active)setMessage(error instanceof Error?error.message:'Pix indisponível')});return()=>{active=false}},[id,status,visible]);
+  async function copy(value:string){try{await navigator.clipboard.writeText(value);setMessage('Copiado.')}catch{setMessage('Não foi possível copiar. Selecione o texto para copiar.')}}
   async function send() {
     if (!file) return;
-    setBusy(true); const form = new FormData(); form.set('booking', id); form.set('file', file);
-    try { const response = await fetch('/api/cliente/receipt', { method: 'POST', body: form }); const data: { error?: string } = await response.json(); if (!response.ok) throw Error(data.error || 'Falha ao enviar'); window.location.reload(); }
+    setBusy(true);setMessage(''); const form = new FormData(); form.set('booking', id); form.set('file', file);
+    try { const response = await fetch('/api/cliente/receipt', { method: 'POST', body: form }); const data: { error?: string } = await response.json(); if (!response.ok) throw Error(data.error || 'Falha ao enviar'); setMessage('Comprovante enviado para análise.');setSubmitted(true);setFile(null);if(!immediate)window.location.reload(); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Falha ao enviar'); }
     finally { setBusy(false); }
   }
-  return <div className="stack"><p>Pix: {status === 'PAID' ? 'pagamento aprovado' : status === 'REVIEW' ? 'comprovante em análise' : status === 'REJECTED' ? 'comprovante recusado; confira o pagamento e reenvie' : 'aguardando comprovante'}</p>{status !== 'PAID' && <><button type="button" onClick={() => void showPix()}>Mostrar Pix copia e cola</button>{code && <><textarea readOnly aria-label="Pix copia e cola" value={code} rows={4} /><button type="button" onClick={() => void navigator.clipboard.writeText(code)}>Copiar código Pix</button><p>Confira o recebedor e o valor no seu banco antes de pagar.</p></>}<label>Comprovante<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e => setFile(e.target.files?.[0] || null)} /></label><button type="button" disabled={!file || busy} onClick={() => void send()}>Enviar comprovante</button></>}{message && <p role="alert">{message}</p>}</div>;
+  return <div className="stack receipt-payment">
+    <p>Pix: {submitted||status==='REVIEW'?'comprovante em análise':status==='PAID'?'pagamento aprovado':status==='REJECTED'?'comprovante recusado; confira o pagamento e reenvie':'aguardando comprovante'}</p>
+    {status!=='PAID'&&<>
+      <button type="button" onClick={()=>setVisible(value=>!value)}>{visible?'Ocultar dados Pix':'Ver QR code e dados Pix'}</button>
+      {visible&&<>
+        {!pix&&!message&&<p role="status">Gerando QR code...</p>}
+        {pix&&<div className="pix-data">
+          {qr&&<img src={qr} alt="QR code Pix deste agendamento" width="240" height="240"/>}
+          <strong>{(pix.amount/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</strong>
+          <span>Recebedor: {pix.name}</span><span>Chave Pix: {pix.key}</span>
+          <button type="button" onClick={()=>void copy(pix.key)}>Copiar chave Pix</button>
+          <label>Pix copia e cola<textarea readOnly value={pix.code} rows={4} onFocus={e=>e.target.select()}/></label>
+          <button type="button" onClick={()=>void copy(pix.code)}>Copiar código Pix</button>
+          <p className="muted">Confira o recebedor e o valor no aplicativo do banco antes de pagar.</p>
+        </div>}
+      </>}
+      {!submitted&&<>
+        <label>Comprovante<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
+        <button type="button" disabled={!file||busy} onClick={()=>void send()}>Enviar comprovante</button>
+      </>}
+    </>}
+    {message&&<p role="status">{message}</p>}
+  </div>;
 }
