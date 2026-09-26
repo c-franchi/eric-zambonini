@@ -8,8 +8,9 @@ import { sendPush } from '@/lib/push';
 export async function POST(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: 'Entre com Google para confirmar seu horário.' }, { status: 401 });
-  let payload: { service?: string; date?: string; time?: string; name?: string; phone?: string; payment_method?: string };
+  let payload: { service?: string; date?: string; time?: string; name?: string; phone?: string; payment_method?: string;acceptedLegal?:boolean;legalVersion?:string };
   try { payload = await request.json(); } catch { return Response.json({ error: 'Dados inválidos.' }, { status: 400 }); }
+  if(payload.acceptedLegal!==true||payload.legalVersion!=='2026-09-26')return Response.json({error:'Aceite os Termos de Serviço e confirme que está ciente da Política de Privacidade para concluir a reserva.'},{status:400});
   const { service, date, time, name, phone } = payload;
   if (!service || !date || !validDate(date) || !time || !/^([01]\d|2[0-3]):(00|15|30|45)$/.test(time) || !name?.trim() || name.length > 100 || !phone || !/^\+?[\d()\s-]{8,20}$/.test(phone)) {
     return Response.json({ error: 'Revise serviço, data, horário, nome e telefone.' }, { status: 400 });
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
         (SELECT 1 FROM blocked_slots WHERE date = ? AND slot IN (${occupiedSlots.map(()=>'?').join(',')}))`).bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', createdAt,chosen.price_cents,chosen.price_variable,payload.payment_method||'IN_PERSON',isPix?'AWAITING_PAYMENT':'PENDING',date,...occupiedSlots),
       ...occupiedSlots.map((slot) => database.prepare('INSERT INTO booked_slots (booking_id, date, slot) VALUES (?, ?, ?)').bind(id, date, slot)),
       database.prepare('UPDATE users SET name=?,phone=? WHERE sub=?').bind(name.trim(),phone.trim(),viewer.sub),
+      database.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(`legal_acceptance:${viewer.sub}`,JSON.stringify({termsVersion:payload.legalVersion,privacyVersion:payload.legalVersion,acceptedAt:createdAt,method:'booking'})),
       notificationInsert(database,'BOOKING',isPix?'Nova reserva aguardando Pix':'Novo agendamento',`${name.trim()} reservou ${chosen.name} para ${date.split('-').reverse().join('/')} às ${time}. Telefone: ${phone.trim()}. ${isPix?'Aguardando pagamento e comprovante Pix.':chosen.price_variable?'Valor a combinar.':'Pagamento no atendimento.'}`,`/admin/agenda?date=${date}`),
     ]);
     await deliverOwnerNotifications().catch(()=>{});
