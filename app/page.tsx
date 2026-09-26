@@ -1,9 +1,10 @@
-import { ArrowRight, Award, CalendarDays, Clock3, Menu, UsersRound } from 'lucide-react';
+import { ArrowRight, Award, CalendarDays, Clock3, UsersRound } from 'lucide-react';
 import { db } from '@/lib/server';
 import type { Service } from '@/lib/booking';
 import { fallbackProfile } from '@/lib/profile';
 import { ServiceIcon } from '@/lib/service-icons';
 import PortfolioCarousel from './portfolio-carousel';
+import SiteHeader from './site-header';
 
 export const dynamic = 'force-dynamic';
 const works = [
@@ -19,7 +20,7 @@ export default async function Home() {
   try { portfolio=(await db().prepare('SELECT id,title,alt_text FROM portfolio WHERE active=1 ORDER BY sort_order,title LIMIT 30').all<{id:string;title:string;alt_text:string}>()).results; } catch {}
   try { const row=await db().prepare("SELECT value FROM settings WHERE key='barber_profile'").first<{value:string}>();if(row) profile=JSON.parse(row.value); } catch {}
   return <div className="site-shell">
-    <header className="topbar"><div className="wrap nav"><a className="brand nav-logo" href="/" aria-label="Eric Zambonini — início"><img src="/images/eric-zambonini-horizontal-v2.png" alt="Eric Zambonini — Beleza masculina e feminina" width="1420" height="180" /></a><nav aria-label="Navegação principal"><a href="#servicos">Serviços</a><a href="#exemplos">Exemplos</a><a href="#sobre">Sobre</a><a href="/cliente">Área do cliente</a><a className="pill" href="/agendar">Agendar horário</a></nav><details className="mobile-menu"><summary aria-label="Abrir menu"><Menu size={25}/></summary><div><a href="#servicos">Serviços</a><a href="#exemplos">Exemplos</a><a href="#sobre">Sobre</a><a href="/cliente">Área do cliente</a><a href="/agendar">Agendar horário</a></div></details></div></header>
+    <SiteHeader/>
     <main>
       <section className="hero"><div className="hero-photo" /><div className="hero-shade" /><div className="wrap hero-content"><p className="eyebrow">SEU ESTILO, EM BOAS MÃOS</p><h1 className="hero-logo"><img src="/images/eric-zambonini-logo.png" alt="Eric Zambonini — Beleza masculina e feminina" width="1714" height="918" fetchPriority="high" /></h1><div className="hero-highlights"><span><Award/> Mais de {profile.yearsExperience} anos de experiência</span><span><UsersRound/> Beleza masculina e feminina</span><span><CalendarDays/> Escolha seu horário pela agenda</span></div><div className="hero-actions"><a className="button" href="/agendar"><CalendarDays size={21}/> Agendar horário <ArrowRight size={19}/></a><a className="button secondary" href="#servicos">Ver serviços</a></div></div></section>
       <section className="section wrap" id="servicos"><div className="section-head"><p className="eyebrow">ESCOLHA O SEU CUIDADO</p><h2>Serviços</h2><p>Confira os valores e reserve o melhor horário.</p></div>{services.length ? <div className="service-grid">{services.map(s => <a className="service-card" key={s.id} href={`/agendar?service=${encodeURIComponent(s.id)}`} aria-label={`Agendar ${s.name}`}><div className="service-icon"><ServiceIcon icon={s.icon} name={s.name}/></div><div className="service-details"><h3>{s.name}</h3>{s.description && <p>{s.description}</p>}<div className="service-meta"><span><Clock3 size={17}/> {s.duration_min} min</span><strong>{(s.price_cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</strong></div></div><span className="service-link" aria-hidden="true"><ArrowRight size={22}/></span></a>)}</div> : <div className="empty">Os serviços e horários estão sendo preparados. Volte em breve.</div>}</section>
