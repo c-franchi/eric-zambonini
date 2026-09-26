@@ -172,6 +172,37 @@ body {
 .admin-calendar-people{display:inline-flex;align-items:center;justify-content:center;color:#f2c478;line-height:1}.admin-calendar-grid button .admin-calendar-people svg{flex:none}
 .pix-checkout-notice,.pix-deadline{padding:14px 16px;border:1px solid #cfaa65;border-radius:9px;background:#3a2c1b;color:#ffe6b7;line-height:1.45}.pix-checkout-notice{margin:0}.pix-deadline{display:grid;gap:5px;margin:0}.pix-deadline a{text-decoration:underline;text-underline-offset:3px}
 .admin-calendar-people{gap:3px}.admin-calendar-people b{font-size:12px;font-weight:700}
+.booking-form .booking-step{scroll-margin-top:104px;border:1px solid #514536;border-radius:12px;background:linear-gradient(145deg,#221e19,#191715);overflow:hidden}
+.booking-form .booking-step.is-disabled{opacity:.58}
+.booking-form .booking-step-trigger{width:100%;min-height:72px;padding:14px 18px;display:grid;grid-template-columns:34px auto minmax(0,1fr) 20px;align-items:center;gap:12px;text-align:left;color:#f5eee1;background:transparent;border:0;cursor:pointer}
+.booking-form .booking-step-trigger:disabled{cursor:not-allowed}
+.booking-form .booking-step-trigger:not(:disabled):hover{background:#ffffff08}
+.booking-form .booking-step-trigger:focus-visible{outline:2px solid #e8bd7a;outline-offset:-3px}
+.booking-form .booking-step-number{width:30px;height:30px;display:grid;place-items:center;border:1px solid #806748;border-radius:50%;color:#e9c17e;font-weight:700}
+.booking-form .booking-step-name{font-weight:700;color:#f6e4c8}
+.booking-form .booking-step-summary{min-width:0;color:#c8beaf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.booking-form .booking-step-chevron{color:#e9c17e;transition:transform .18s ease}
+.booking-form .booking-step-chevron.open{transform:rotate(90deg)}
+.booking-form .booking-service-picker,.booking-form .booking-calendar,.booking-form .booking-times,.booking-form .booking-details,.booking-form .booking-login{padding:4px 18px 20px}
+.booking-form .booking-calendar{border:0;background:transparent;border-radius:0}
+.booking-form .booking-service-picker>.field-title,.booking-form .booking-times>.field-title{display:block;margin:0 0 12px}
+.booking-form .booking-service-list{display:grid;gap:10px}
+.booking-form .booking-service-option{width:100%;display:grid;grid-template-columns:68px minmax(0,1fr) 22px;align-items:center;gap:14px;padding:12px;text-align:left;border:1px solid #514536;border-radius:10px;background:#171614;color:#f5eee1;cursor:pointer}
+.booking-form .booking-service-option:hover,.booking-form .booking-service-option.selected{border-color:#d9b275;background:#292117}
+.booking-form .booking-service-option> :first-child{width:68px;height:68px}
+.booking-form .booking-service-info{display:grid;gap:4px;min-width:0}
+.booking-form .booking-service-info>strong{font:400 20px Georgia,serif;color:#f7ead6}
+.booking-form .booking-service-info small{color:#bbb1a2}
+.booking-form .booking-service-meta{display:flex;align-items:center;gap:8px;color:#c6bcad;font-size:14px}
+.booking-form .booking-service-meta b{color:#e8c17e;font-weight:600}
+.booking-form .booking-service-chevron{color:#e8c17e}
+.booking-form .booking-details{display:grid;gap:16px}
+.booking-form .booking-details>label{display:grid;gap:7px}
+.booking-form .booking-details>label>select,.booking-form .booking-details>label>input{width:100%}
+.booking-form .booking-details .legal-acceptance{grid-template-columns:auto 1fr;align-items:start}
+.booking-form .booking-details .legal-acceptance input{margin-top:5px}
+.booking-form .booking-pix{padding:18px}
+@media(max-width:560px){.booking-form .booking-step{scroll-margin-top:78px}.booking-form .booking-step-trigger{min-height:65px;padding:12px;grid-template-columns:30px auto minmax(0,1fr) 18px;gap:8px}.booking-form .booking-step-name{font-size:14px}.booking-form .booking-step-summary{font-size:13px}.booking-form .booking-service-picker,.booking-form .booking-calendar,.booking-form .booking-times,.booking-form .booking-details,.booking-form .booking-login{padding:4px 12px 16px}.booking-form .booking-service-option{grid-template-columns:56px minmax(0,1fr) 18px;gap:10px;padding:9px}.booking-form .booking-service-option> :first-child{width:56px;height:56px}.booking-form .booking-service-info>strong{font-size:18px}.booking-form .booking-service-meta{font-size:13px}}
 .manual-booking{max-width:880px}.manual-booking .manual-intro h2{font:400 30px Georgia,serif;margin:0 0 3px}.manual-booking .manual-intro p{margin:0 0 20px}.manual-booking .booking-calendar{margin:0}.manual-booking .time-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px}.manual-booking .time-grid button{min-height:48px;border-radius:7px}.manual-booking .time-grid button.selected{background:#d7ab6b;color:#1c160f}.manual-booking .booking-times{margin:0}.manual-booking form>.button{justify-self:start;min-width:220px}@media(max-width:560px){.manual-booking .time-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.manual-booking .admin-form-two{grid-template-columns:1fr}}
 .site-shell .topbar{position:fixed;inset:0 0 auto;width:100%;z-index:40;transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.site-shell .topbar.is-scrolled{background:rgba(20,17,15,.84);border-bottom-color:#d2ac706e;box-shadow:0 8px 26px #0005}.site-shell .topbar .mobile-menu>div{background:rgba(24,21,18,.97)}
 
