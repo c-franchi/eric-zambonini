@@ -1,4 +1,6 @@
-export type Service = { id: string; name: string; icon?: string | null; description: string | null; duration_min: number; price_cents: number; allow_in_person_payment: number; interleaved_blocks: string | null };
+export type Service = { id: string; name: string; icon?: string | null; description: string | null; duration_min: number; price_cents: number; price_variable: number; allow_in_person_payment: number; interleaved_blocks: string | null };
+export const durationLabel=(minutes:number)=>minutes<60?`${minutes} min`:`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')} hs`;
+export const servicePriceLabel=(service:Pick<Service,'price_cents'|'price_variable'>)=>service.price_variable?'Valor a combinar':(service.price_cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export type TimeBlock = { start_min:number; duration_min:number; blocked:boolean };
 export function validBlocks(blocks:unknown,duration:number):blocks is TimeBlock[] {
   if(!Array.isArray(blocks)||blocks.length<1||blocks.length>32||!Number.isInteger(duration)||duration<15||duration>480)return false;

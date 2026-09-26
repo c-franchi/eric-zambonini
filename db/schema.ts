@@ -8,6 +8,7 @@ export const services = sqliteTable('services', {
   durationMin: integer('duration_min').notNull(),
   interleavedBlocks: text('interleaved_blocks'),
   priceCents: integer('price_cents').notNull(),
+  priceVariable: integer('price_variable', {mode:'boolean'}).notNull().default(false),
   allowInPersonPayment: integer('allow_in_person_payment', {mode:'boolean'}).notNull().default(true),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
 });
@@ -42,6 +43,7 @@ export const bookings = sqliteTable('bookings', {
   phone: text('phone').notNull(),
   status: text('status').notNull().default('CONFIRMED'),
   priceCents: integer('price_cents').notNull().default(0),
+  priceVariable: integer('price_variable', {mode:'boolean'}).notNull().default(false),
   paymentMethod: text('payment_method').notNull().default('IN_PERSON'),
   paymentStatus: text('payment_status').notNull().default('PENDING'),
   receiptKey: text('receipt_key'),
