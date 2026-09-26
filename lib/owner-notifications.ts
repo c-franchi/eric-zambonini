@@ -28,7 +28,8 @@ export async function deliverOwnerNotifications(){
   try{
    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'authorization':`Bearer ${key}`,'content-type':'application/json','Idempotency-Key':item.id},body:JSON.stringify({from:settings.from,to:[settings.to],subject:item.title,text:`${item.body}\n\nAcesse o painel: https://ericzambonini.com.br${item.link}`})});
    if(!response.ok)throw Error(`Resend HTTP ${response.status}`);
-   await database.prepare("UPDATE owner_notifications SET email_status='SENT',email_error=NULL WHERE id=?").bind(item.id).run();
+   const receipt=await response.json() as {id?:string};
+   await database.prepare("UPDATE owner_notifications SET email_status='SENT',email_provider_id=?,email_error=NULL WHERE id=?").bind(receipt.id||null,item.id).run();
   }catch(error){await database.prepare('UPDATE owner_notifications SET email_error=? WHERE id=?').bind(String(error).slice(0,180),item.id).run()}
  }
 }

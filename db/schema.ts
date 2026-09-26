@@ -92,6 +92,7 @@ export const ownerNotifications = sqliteTable('owner_notifications', {
   emailAttempts: integer('email_attempts').notNull().default(0),
   lastAttemptAt: text('last_attempt_at'),
   emailError: text('email_error'),
+  emailProviderId: text('email_provider_id'),
 });
 
 export const pushSubscriptions = sqliteTable('push_subscriptions', {

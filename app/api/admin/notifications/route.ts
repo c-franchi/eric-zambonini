@@ -13,7 +13,8 @@ export async function GET(){
    notificationSettings(),
   ]);
   const apiKeyConfigured=Boolean((env as unknown as Record<string,string|undefined>).RESEND_API_KEY);
-  return Response.json({items:items.results,unread:unread?.total||0,pendingEmails:pending?.total||0,settings,apiKeyConfigured},{headers:{'cache-control':'no-store'}});
+  const webhookConfigured=Boolean((env as unknown as Record<string,string|undefined>).RESEND_WEBHOOK_SECRET);
+  return Response.json({items:items.results,unread:unread?.total||0,pendingEmails:pending?.total||0,settings,apiKeyConfigured,webhookConfigured},{headers:{'cache-control':'no-store'}});
  }catch{return unavailable()}
 }
 export async function PATCH(request:Request){
