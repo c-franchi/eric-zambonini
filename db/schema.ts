@@ -79,3 +79,17 @@ export const messages = sqliteTable('messages', {
  body: text('body').notNull(),
  createdAt: text('created_at').notNull(),
 });
+
+export const ownerNotifications = sqliteTable('owner_notifications', {
+  id: text('id').primaryKey(),
+  kind: text('kind').notNull(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  link: text('link').notNull(),
+  createdAt: text('created_at').notNull(),
+  readAt: text('read_at'),
+  emailStatus: text('email_status').notNull().default('PENDING'),
+  emailAttempts: integer('email_attempts').notNull().default(0),
+  lastAttemptAt: text('last_attempt_at'),
+  emailError: text('email_error'),
+});

@@ -3,6 +3,7 @@ import { getViewer } from '@/lib/auth';
 import { availableTimes, parseSchedule, parseBookingRules, parseBlocks, occupiedSlotsFor, validDate } from '@/lib/booking';
 import { expireUnpaidPix, pixExpiresAt } from '@/lib/pix-expiry';
 import { ensureServiceCatalog } from '@/lib/service-catalog';
+import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
 export async function POST(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: 'Entre com Google para confirmar seu horário.' }, { status: 401 });
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     await ensureServiceCatalog();
     const database = db();
     await expireUnpaidPix(database);
-    const chosen = await database.prepare('SELECT duration_min, price_cents, price_variable, allow_in_person_payment, interleaved_blocks FROM services WHERE id = ? AND active = 1').bind(service).first<{ duration_min: number; price_cents: number; price_variable:number; allow_in_person_payment: number; interleaved_blocks:string|null }>();
+    const chosen = await database.prepare('SELECT name, duration_min, price_cents, price_variable, allow_in_person_payment, interleaved_blocks FROM services WHERE id = ? AND active = 1').bind(service).first<{ name:string;duration_min: number; price_cents: number; price_variable:number; allow_in_person_payment: number; interleaved_blocks:string|null }>();
     const config = await database.prepare("SELECT value FROM settings WHERE key = 'schedule'").first<{ value: string }>();
     const rules = await database.prepare("SELECT value FROM settings WHERE key = 'booking_rules'").first<{ value: string }>();
     if (!chosen) return Response.json({ error: 'Serviço indisponível.' }, { status: 404 });
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
         (SELECT 1 FROM blocked_slots WHERE date = ? AND slot IN (${occupiedSlots.map(()=>'?').join(',')}))`).bind(id, service, viewer.sub, date, time, name.trim(), phone.trim(), 'CONFIRMED', createdAt,chosen.price_cents,chosen.price_variable,payload.payment_method||'IN_PERSON',isPix?'AWAITING_PAYMENT':'PENDING',date,...occupiedSlots),
       ...occupiedSlots.map((slot) => database.prepare('INSERT INTO booked_slots (booking_id, date, slot) VALUES (?, ?, ?)').bind(id, date, slot)),
       database.prepare('UPDATE users SET name=?,phone=? WHERE sub=?').bind(name.trim(),phone.trim(),viewer.sub),
+      notificationInsert(database,'BOOKING',isPix?'Nova reserva aguardando Pix':'Novo agendamento',`${name.trim()} reservou ${chosen.name} para ${date.split('-').reverse().join('/')} às ${time}. Telefone: ${phone.trim()}. ${isPix?'Aguardando pagamento e comprovante Pix.':chosen.price_variable?'Valor a combinar.':'Pagamento no atendimento.'}`,`/admin/agenda?date=${date}`),
     ]);
+    await deliverOwnerNotifications().catch(()=>{});
     return Response.json({ id,expiresAt:isPix?pixExpiresAt(createdAt):null }, { status: 201 });
   } catch (error) {
     if (/UNIQUE constraint|FOREIGN KEY constraint/.test(String(error))) return Response.json({ error: 'Esse horário acabou de ser reservado ou bloqueado. Escolha outro.' }, { status: 409 });

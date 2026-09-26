@@ -19,6 +19,7 @@ export default function BookingCalendar({revision}:{revision:number}){
  const [bookings,setBookings]=useState<Booking[]>([]);
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState('');
+ useEffect(()=>{const day=new URLSearchParams(window.location.search).get('date');if(day&&/^\d{4}-\d{2}-\d{2}$/.test(day)){setMonth(day.slice(0,7));setSelected(day)}},[]);
  const [year,number]=month.split('-').map(Number);
  const first=new Date(Date.UTC(year,number-1,1)).getUTCDay();
  const count=new Date(Date.UTC(year,number,0)).getUTCDate();

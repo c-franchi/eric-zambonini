@@ -2,6 +2,7 @@ import { getViewer } from '@/lib/auth';
 import { db, unavailable } from '@/lib/server';
 import { env } from 'cloudflare:workers';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
+import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
 export async function POST(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: 'Entre com Google' }, { status: 401 });
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     }
     catch { await env.BUCKET!.delete(key); throw Error('Falha ao salvar'); }
     if (booking.receipt_key) await env.BUCKET!.delete(booking.receipt_key).catch(() => {});
+    await notificationInsert(database,'RECEIPT','Comprovante Pix para analisar',`${viewer.name} enviou o comprovante do agendamento. Abra a agenda para conferir.`,`/admin/agenda`).run().then(()=>deliverOwnerNotifications()).catch(()=>{});
     return Response.json({ ok: true });
   } catch { return unavailable(); }
 }

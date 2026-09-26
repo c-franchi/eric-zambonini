@@ -2,6 +2,7 @@ import { db, ownerOnly, unavailable } from '@/lib/server';
 import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, validDate } from '@/lib/booking';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
 import { ensureServiceCatalog } from '@/lib/service-catalog';
+import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
 
 const timePattern=/^([01]\d|2[0-3]):(00|15|30|45)$/;
 export async function POST(request:Request){
@@ -13,7 +14,7 @@ export async function POST(request:Request){
   try{
     await ensureServiceCatalog();
     const database=db();await expireUnpaidPix(database);
-    const chosen=await database.prepare('SELECT duration_min,price_cents,price_variable,interleaved_blocks FROM services WHERE id=? AND active=1').bind(service).first<{duration_min:number;price_cents:number;price_variable:number;interleaved_blocks:string|null}>();
+    const chosen=await database.prepare('SELECT name,duration_min,price_cents,price_variable,interleaved_blocks FROM services WHERE id=? AND active=1').bind(service).first<{name:string;duration_min:number;price_cents:number;price_variable:number;interleaved_blocks:string|null}>();
     if(!chosen)return Response.json({error:'Serviço indisponível.'},{status:404});
     if(chosen.price_variable&&payment==='PAID_NOW')return Response.json({error:'Esse serviço ainda não possui valor definido. Registre pagamento no atendimento.'},{status:400});
     const [settings,rules,blocked]=await Promise.all([
@@ -28,7 +29,9 @@ export async function POST(request:Request){
       database.prepare(`INSERT INTO bookings(id,service_id,user_sub,date,time,name,phone,status,created_at,price_cents,price_variable,payment_method,payment_status)
         SELECT ?,?,NULL,?,?,?,?,?,?,?,?, ?,? WHERE NOT EXISTS (SELECT 1 FROM blocked_slots WHERE date=? AND slot IN (${slots.map(()=>'?').join(',')}))`).bind(id,service,date,time,name.trim(),phone.trim(),'CONFIRMED',new Date().toISOString(),chosen.price_cents,chosen.price_variable,payment==='PAID_NOW'?'MANUAL_PAID':'IN_PERSON',payment==='PAID_NOW'?'PAID':'PENDING',date,...slots),
       ...slots.map(slot=>database.prepare('INSERT INTO booked_slots(booking_id,date,slot) VALUES(?,?,?)').bind(id,date,slot)),
+      notificationInsert(database,'BOOKING','Agendamento manual',`${name.trim()} · ${chosen.name} · ${date.split('-').reverse().join('/')} às ${time}. Telefone: ${phone.trim()}.`,`/admin/agenda?date=${date}`),
     ]);
+    await deliverOwnerNotifications().catch(()=>{});
     return Response.json({id},{status:201});
   }catch(error){if(/UNIQUE constraint|FOREIGN KEY constraint/.test(String(error)))return Response.json({error:'Esse horário acabou de ser reservado. Escolha outro.'},{status:409});return unavailable()}
 }

@@ -1,0 +1,19 @@
+{
+  "id": "/agendar",
+  "name": "Eric Zambonini — Agendamento",
+  "short_name": "Eric Agenda",
+  "description": "Agende seus serviços de beleza com Eric Zambonini.",
+  "start_url": "/agendar?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#171411",
+  "theme_color": "#171411",
+  "icons": [
+    {"src":"/pwa-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"/pwa-512.png","sizes":"512x512","type":"image/png"}
+  ],
+  "shortcuts": [
+    {"name":"Agendar horário","url":"/agendar","icons":[{"src":"/pwa-192.png","sizes":"192x192"}]},
+    {"name":"Meus horários","url":"/cliente","icons":[{"src":"/pwa-192.png","sizes":"192x192"}]}
+  ]
+}
