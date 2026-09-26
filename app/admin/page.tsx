@@ -1,3 +1,2 @@
-import AdminPage from './admin-page';
-export const dynamic='force-dynamic';
-export default function Page(){return <AdminPage/>}
+import { redirect } from 'next/navigation';
+export default function Page(){redirect('/admin/agendar')}
