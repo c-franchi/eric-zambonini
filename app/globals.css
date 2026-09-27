@@ -240,6 +240,7 @@ body {
 .push-preference { margin: 1rem 0; }
 .push-preference button { border: 1px solid #bf965b; background: #29231c; color: #f4d6a4; border-radius: .7rem; padding: .75rem 1rem; cursor: pointer; font: inherit; }
 .push-preference p:not(:empty) { color: #f4d6a4; margin: .5rem 0; }
+.push-ios-help{margin:0;padding:12px 14px;border-left:3px solid #d9b36f;border-radius:0 8px 8px 0;background:#282119;color:#e9dfd0;font-size:14px;line-height:1.55}.push-ios-help strong{color:#f1cf91}
 .legal-page { min-height: 100vh; color: #f4e8d8; background: radial-gradient(circle at 5% 0%, #3b2a1a 0, #161412 32%, #11100f 100%); }
 .legal-wrap { width: min(100% - 2.5rem, 800px); margin: auto; padding: 1.5rem 0 5rem; }
 .legal-nav, .legal-footer { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
