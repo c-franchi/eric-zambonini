@@ -4,6 +4,30 @@ import { sendPush } from '@/lib/push';
 import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
 import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, validDate } from '@/lib/booking';
 import { env } from 'cloudflare:workers';
+export async function DELETE(request: Request) {
+  if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
+  const id = new URL(request.url).searchParams.get('id');
+  if (!id || id.length > 100) return Response.json({ error: 'Agendamento inválido.' }, { status: 400 });
+  try {
+    const database = db();
+    const booking = await database.prepare('SELECT status,receipt_key,payment_status FROM bookings WHERE id=?').bind(id).first<{ status: string; receipt_key: string | null; payment_status: string }>();
+    if (!booking) return Response.json({ error: 'Agendamento não encontrado.' }, { status: 404 });
+    if (booking.status !== 'CANCELLED') return Response.json({ error: 'Só é possível excluir agendamentos cancelados.' }, { status: 409 });
+    const linkedOrder = await database.prepare('SELECT 1 AS found FROM product_orders WHERE booking_id=? LIMIT 1').bind(id).first();
+    if (linkedOrder) return Response.json({ error: 'Este agendamento está vinculado a um pedido da loja e não pode ser excluído.' }, { status: 409 });
+    await database.batch([
+      database.prepare('DELETE FROM booked_slots WHERE booking_id=?').bind(id),
+      database.prepare("DELETE FROM bookings WHERE id=? AND status='CANCELLED'").bind(id),
+    ]);
+    if (booking.receipt_key) {
+      const bucket = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
+      if (bucket) await bucket.delete(booking.receipt_key).catch(() => {});
+    }
+    return Response.json({ ok: true });
+  } catch {
+    return unavailable();
+  }
+}
 export async function GET(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   const month = new URL(request.url).searchParams.get('month');

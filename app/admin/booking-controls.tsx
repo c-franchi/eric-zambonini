@@ -1,12 +1,25 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Pencil, XCircle } from 'lucide-react';
+import { Pencil, Trash2, XCircle } from 'lucide-react';
 import type { Service } from '@/lib/booking';
 import ServicePicker from '@/app/service-picker';
 import { useConfirmAction } from '@/app/confirm-action';
 
 type ManagedService=Service&{active:number};
 type Appointment={id:string;service_id:string;date:string;time:string;name:string;phone:string;payment_status:string};
+export function DeleteCancelledBooking({id,paid=false,updated}:{id:string;paid?:boolean;updated:()=>void}){
+ const [busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const {confirm,dialog}=useConfirmAction();
+ async function remove(){
+  const confirmed=await confirm({title:'Excluir agendamento cancelado?',description:paid?'O agendamento e seu registro de pagamento serão removidos permanentemente. Esta ação não pode ser desfeita.':'O registro será removido permanentemente do histórico. Esta ação não pode ser desfeita.',confirmLabel:'Excluir agendamento',danger:true});
+  if(!confirmed)return;
+  setBusy(true);setMessage('');
+  try{const response=await fetch(`/api/admin/bookings?id=${encodeURIComponent(id)}`,{method:'DELETE'});const data:{error?:string}=await response.json();if(!response.ok)throw Error(data.error||'Não foi possível excluir.');setMessage('Agendamento excluído.');updated()}
+  catch(error){setMessage(error instanceof Error?error.message:'Não foi possível excluir.')}
+  finally{setBusy(false)}
+ }
+ return <>{dialog}<div className="admin-booking-controls"><div className="admin-row-actions"><button type="button" disabled={busy} onClick={()=>void remove()}><Trash2 size={15}/> {busy?'Excluindo…':'Excluir'}</button></div>{message&&<p className="admin-booking-feedback" role="status">{message}</p>}</div></>
+}
 export default function BookingControls({booking,updated}:{booking:Appointment;updated:()=>void}){
  const [open,setOpen]=useState(false),[services,setServices]=useState<ManagedService[]>([]),[service,setService]=useState(booking.service_id),[date,setDate]=useState(booking.date),[time,setTime]=useState(booking.time),[name,setName]=useState(booking.name),[phone,setPhone]=useState(booking.phone),[times,setTimes]=useState<string[]>([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const {confirm,dialog}=useConfirmAction();
