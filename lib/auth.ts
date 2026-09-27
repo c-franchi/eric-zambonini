@@ -29,6 +29,8 @@ export async function getViewer(): Promise<Viewer | null> {
   try {
     const { payload } = await jwtVerify(token, signingKey(), { algorithms: ['HS256'] });
     if (!payload.sub || typeof payload.email !== 'string' || typeof payload.name !== 'string') return null;
+    const account = await env.DB.prepare('SELECT email FROM users WHERE sub = ?').bind(payload.sub).first<{ email: string }>();
+    if (!account || account.email.trim().toLowerCase() !== payload.email.trim().toLowerCase()) return null;
     return { sub: payload.sub, email: payload.email, name: payload.name };
   } catch { return null; }
 }
