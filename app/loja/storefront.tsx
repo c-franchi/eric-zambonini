@@ -28,7 +28,7 @@ export default function Storefront({products,signedIn,initialName='',initialEmai
     try{
       const response=await fetch('/api/cliente/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({request_id:id,items:cartItems.map(product=>({product_id:product.id,quantity:cart[product.id]})),payment_method:paymentMethod,customer_name:name,customer_email:email,customer_phone:phone})});
       const data=await response.json();if(!response.ok)throw Error(data.error||'Não foi possível concluir a compra.');
-      setCart({});requestId.current=null;setMessage(paymentMethod==='PIX'?'Pedido criado. Faça o Pix para confirmar o pagamento.':'Pedido registrado. O pagamento será feito na retirada.');
+      setCart({});requestId.current=null;setMessage(paymentMethod==='PIX'?`Pedido #${String(data.id).slice(0,8)} criado. Faça o Pix para confirmar o pagamento.`:`Pedido #${String(data.id).slice(0,8)} registrado. O pagamento será feito na retirada.`);
       if(data.pix_code)setPix({id:data.id,total_cents:data.total_cents,pix_code:data.pix_code,pix_key:data.pix_key,pix_name:data.pix_name});
       await Promise.all([loadOrders(),fetch('/api/store',{cache:'no-store'}).then(result=>result.json()).then(items=>{if(Array.isArray(items))setCatalog(items)}).catch(()=>{})]);
     }catch(error){setMessage(error instanceof Error?error.message:'Não foi possível concluir a compra.')}
