@@ -19,6 +19,6 @@ export async function POST(request: Request) {
     const sub=existing?.sub||viewer.sub;
     await database.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(`legal_acceptance:${sub}`,JSON.stringify({termsVersion:body.legalVersion,privacyVersion:body.legalVersion,acceptedAt:new Date().toISOString(),method:'google_sign_in'})).run();
     const token = await createSession({...viewer,sub});
-    return new Response(JSON.stringify({ ok:true, name:viewer.name }), { headers: { 'content-type':'application/json', 'cache-control':'no-store', 'set-cookie':`${sessionCookie}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=604800` } });
+    return new Response(JSON.stringify({ ok:true, name:viewer.name, isAdmin:isAdminEmail(viewer.email) }), { headers: { 'content-type':'application/json', 'cache-control':'no-store', 'set-cookie':`${sessionCookie}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=604800` } });
   } catch { return Response.json({ error:'Não foi possível validar a conta Google. Tente novamente.' }, { status:401 }); }
 }

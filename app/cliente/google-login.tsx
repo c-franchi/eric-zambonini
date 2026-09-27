@@ -15,9 +15,9 @@ export default function GoogleLogin({clientId,redirectTo='/cliente',termsAccepte
       const csrfResponse=await fetch('/api/auth/csrf',{credentials:'same-origin',cache:'no-store'});
       const csrf:{token:string}=await csrfResponse.json();
       const auth=await fetch('/api/auth/google',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({credential:response.credential,csrf:csrf.token,acceptedLegal:true,legalVersion:'2026-09-26'})});
-      const result:{error?:string}=await auth.json();
+      const result:{error?:string;isAdmin?:boolean}=await auth.json();
       if(!auth.ok)throw new Error(result.error||'Não foi possível entrar.');
-      window.location.assign(redirect.current);
+      window.location.assign(result.isAdmin?'/admin/agendar':redirect.current);
     }catch(e){setError(e instanceof Error?e.message:'Não foi possível entrar.');}
   },[]);
   const ready=useCallback(()=>{if(!clientId||!window.google||!button.current||!accepted||rendered.current)return;button.current.replaceChildren();window.google.accounts.id.initialize({client_id:clientId,callback:authenticate,ux_mode:'popup'});window.google.accounts.id.renderButton(button.current,{theme:'outline',size:'large',text:'continue_with',locale:'pt-BR',width:300});rendered.current=true;setGoogleReady(true)},[accepted,authenticate,clientId]);
