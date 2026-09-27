@@ -3,8 +3,7 @@ import { db } from '@/lib/server';
 export async function ensureStoreSchema() {
   const database = db();
   const ready=await database.prepare("SELECT value FROM settings WHERE key='store_schema_v1'").first();
-  if(ready)return;
-  await database.batch([
+  if(!ready)await database.batch([
     database.prepare(`CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -41,5 +40,19 @@ export async function ensureStoreSchema() {
     database.prepare('CREATE INDEX IF NOT EXISTS product_orders_booking ON product_orders(booking_id,status)'),
     database.prepare('CREATE INDEX IF NOT EXISTS product_order_items_order ON product_order_items(order_id)'),
     database.prepare("INSERT INTO settings(key,value) VALUES('store_schema_v1','ready') ON CONFLICT(key) DO UPDATE SET value=excluded.value"),
+  ]);
+  const galleryReady=await database.prepare("SELECT value FROM settings WHERE key='store_schema_v2'").first();
+  if(!galleryReady)await database.batch([
+    database.prepare(`CREATE TABLE IF NOT EXISTS product_images (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      image_key TEXT NOT NULL UNIQUE,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    )`),
+    database.prepare('CREATE INDEX IF NOT EXISTS product_images_product_sort ON product_images(product_id,sort_order)'),
+    database.prepare(`INSERT OR IGNORE INTO product_images(id,product_id,image_key,sort_order,created_at)
+      SELECT 'legacy-'||id,id,image_key,0,updated_at FROM products WHERE image_key IS NOT NULL AND image_key<>''`),
+    database.prepare("INSERT INTO settings(key,value) VALUES('store_schema_v2','ready') ON CONFLICT(key) DO UPDATE SET value=excluded.value"),
   ]);
 }
