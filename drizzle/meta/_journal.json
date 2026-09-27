@@ -120,6 +120,20 @@
       "when": 1790519937331,
       "tag": "0016_melodic_punisher",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1790522026322,
+      "tag": "0017_clear_yellow_claw",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1790522225726,
+      "tag": "0018_smart_shiver_man",
+      "breakpoints": true
     }
   ]
 }

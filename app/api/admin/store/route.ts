@@ -10,11 +10,13 @@ export async function GET(){
   try{
     await ensureStoreSchema();const database=db();
     const products=(await database.prepare('SELECT * FROM products ORDER BY active DESC,name').all()).results;
-    const orders=(await database.prepare(`SELECT o.id,o.status,o.payment_status,o.total_cents,o.created_at,u.name AS customer_name,u.email,b.date,b.time,s.name AS service_name
+    const orders=(await database.prepare(`SELECT o.id,o.status,o.payment_status,'APPOINTMENT' AS payment_method,o.total_cents,o.created_at,u.name AS customer_name,u.email,b.date,b.time,s.name AS service_name
       FROM product_orders o JOIN users u ON u.sub=o.user_sub JOIN bookings b ON b.id=o.booking_id JOIN services s ON s.id=b.service_id
-      ORDER BY o.created_at DESC LIMIT 200`).all<{id:string;status:string;payment_status:string;total_cents:number;created_at:string;customer_name:string;email:string;date:string;time:string;service_name:string}>()).results;
+      ORDER BY o.created_at DESC LIMIT 200`).all<{id:string;status:string;payment_status:string;payment_method:string;total_cents:number;created_at:string;customer_name:string;email:string;date:string;time:string;service_name:string}>()).results;
     const ordersWithItems=await Promise.all(orders.map(async order=>({...order,items:(await database.prepare('SELECT product_name,unit_price_cents,quantity,is_preorder FROM product_order_items WHERE order_id=?').bind(order.id).all()).results})));
-    return Response.json({products,orders:ordersWithItems},{headers:{'cache-control':'no-store'}});
+    const sales=(await database.prepare(`SELECT id,status,payment_status,payment_method,total_cents,created_at,customer_name,customer_email AS email,customer_phone FROM product_sales ORDER BY created_at DESC LIMIT 200`).all<{id:string;status:string;payment_status:string;payment_method:string;total_cents:number;created_at:string;customer_name:string;email:string;customer_phone:string}>()).results;
+    const salesWithItems=await Promise.all(sales.map(async order=>({...order,items:(await database.prepare('SELECT product_name,unit_price_cents,quantity,is_preorder FROM product_sale_items WHERE sale_id=?').bind(order.id).all()).results})));
+    return Response.json({products,orders:[...ordersWithItems,...salesWithItems].sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,200)},{headers:{'cache-control':'no-store'}});
   }catch{return unavailable()}
 }
 

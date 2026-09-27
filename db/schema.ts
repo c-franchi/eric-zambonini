@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const services = sqliteTable('services', {
   id: text('id').primaryKey(),
@@ -143,3 +143,29 @@ export const productOrderItems = sqliteTable('product_order_items', {
   quantity: integer('quantity').notNull(),
   isPreorder: integer('is_preorder', {mode:'boolean'}).notNull().default(false),
 });
+
+export const productSales = sqliteTable('product_sales', {
+  id: text('id').primaryKey(),
+  requestKey: text('request_key').notNull().unique(),
+  userSub: text('user_sub').references(() => users.sub),
+  customerName: text('customer_name').notNull(),
+  customerEmail: text('customer_email').notNull(),
+  customerPhone: text('customer_phone').notNull(),
+  status: text('status').notNull().default('PENDING'),
+  paymentMethod: text('payment_method').notNull(),
+  paymentStatus: text('payment_status').notNull(),
+  totalCents: integer('total_cents').notNull(),
+  pickupMethod: text('pickup_method').notNull().default('IN_STORE'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [index('product_sales_user_created').on(table.userSub, table.createdAt), index('product_sales_created').on(table.createdAt)]);
+
+export const productSaleItems = sqliteTable('product_sale_items', {
+  id: text('id').primaryKey(),
+  saleId: text('sale_id').notNull().references(() => productSales.id, {onDelete:'cascade'}),
+  productId: text('product_id').notNull().references(() => products.id),
+  productName: text('product_name').notNull(),
+  unitPriceCents: integer('unit_price_cents').notNull(),
+  quantity: integer('quantity').notNull(),
+  isPreorder: integer('is_preorder', {mode:'boolean'}).notNull().default(false),
+}, (table) => [index('product_sale_items_sale').on(table.saleId)]);
