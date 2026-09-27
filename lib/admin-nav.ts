@@ -9,6 +9,7 @@ export const adminItems=[
  {slug:'configuracoes',label:'Configurações'},
  {slug:'perfil',label:'Meu perfil'},
  {slug:'usuarios',label:'Administradores'},
+ {slug:'loja',label:'Loja e produtos'},
 ] as const;
 export const adminSections=new Set<string>(adminItems.map(item=>item.slug));
 export const sectionTitle=(slug:string)=>adminItems.find(item=>item.slug===slug)?.label||'Agendar cliente';

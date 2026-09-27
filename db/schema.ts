@@ -108,3 +108,38 @@ export const pushDeliveries = sqliteTable('push_deliveries', {
  endpoint: text('endpoint').notNull(),
  createdAt: text('created_at').notNull(),
 });
+
+export const products = sqliteTable('products', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  priceCents: integer('price_cents').notNull(),
+  stock: integer('stock').notNull().default(0),
+  allowPreorder: integer('allow_preorder', {mode:'boolean'}).notNull().default(false),
+  imageKey: text('image_key'),
+  active: integer('active', {mode:'boolean'}).notNull().default(true),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const productOrders = sqliteTable('product_orders', {
+  id: text('id').primaryKey(),
+  requestKey: text('request_key').notNull().unique(),
+  userSub: text('user_sub').notNull().references(() => users.sub),
+  bookingId: text('booking_id').notNull().references(() => bookings.id),
+  status: text('status').notNull().default('PENDING'),
+  paymentStatus: text('payment_status').notNull().default('DUE_AT_APPOINTMENT'),
+  totalCents: integer('total_cents').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const productOrderItems = sqliteTable('product_order_items', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => productOrders.id, {onDelete:'cascade'}),
+  productId: text('product_id').notNull().references(() => products.id),
+  productName: text('product_name').notNull(),
+  unitPriceCents: integer('unit_price_cents').notNull(),
+  quantity: integer('quantity').notNull(),
+  isPreorder: integer('is_preorder', {mode:'boolean'}).notNull().default(false),
+});

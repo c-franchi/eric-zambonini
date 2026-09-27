@@ -1,3 +1,4 @@
+import { waitUntil } from 'cloudflare:workers';
 import { db, ownerOnly, unavailable } from '@/lib/server';
 import { sendPush } from '@/lib/push';
 export async function GET(request: Request) {
@@ -7,7 +8,8 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
-  let data: { sub?: string; body?: string }; try { data = await request.json(); } catch { return Response.json({ error: 'Dados inválidos' }, { status: 400 }); }
+  let data: { sub?: string; body?: string; message_id?: string }; try { data = await request.json(); } catch { return Response.json({ error: 'Dados inválidos' }, { status: 400 }); }
   if (!data.sub || !data.body?.trim() || data.body.length > 2000) return Response.json({ error: 'Mensagem inválida' }, { status: 400 });
-  try { const id=crypto.randomUUID();await db().prepare('INSERT INTO messages(id,user_sub,sender,body,created_at) VALUES(?,?,?,?,?)').bind(id,data.sub,'OWNER',data.body.trim(),new Date().toISOString()).run(); await sendPush(data.sub,id,'Mensagem do Eric',data.body.trim(),'/cliente').catch(()=>{});return Response.json({ ok: true }, { status: 201 }); } catch { return unavailable(); }
+  if (data.message_id && !/^[\da-f-]{36}$/i.test(data.message_id)) return Response.json({ error: 'Identificador de mensagem inválido' }, { status: 400 });
+  try { const database=db(),id=data.message_id||crypto.randomUUID(),body=data.body.trim();const inserted=await database.prepare('INSERT OR IGNORE INTO messages(id,user_sub,sender,body,created_at) VALUES(?,?,?,?,?)').bind(id,data.sub,'OWNER',body,new Date().toISOString()).run();if(!inserted.meta.changes)return Response.json({ok:true,duplicate:true});waitUntil(sendPush(data.sub,id,'Mensagem do Eric',body,'/cliente').catch(()=>{}));return Response.json({ ok: true, id }, { status: 201 }); } catch { return unavailable(); }
 }
