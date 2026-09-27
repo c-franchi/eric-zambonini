@@ -11,11 +11,11 @@ export async function PATCH(request:Request){
     if(!booking)return Response.json({error:'Agendamento não encontrado'},{status:404});
     if(booking.status==='CANCELLED')return Response.json({error:'Agendamento cancelado'},{status:409});
     const ruleRow=await database.prepare("SELECT value FROM settings WHERE key='booking_rules'").first<{value:string}>();const rules=parseBookingRules(ruleRow?.value);
-    if (salonTimeStamp(booking.date,booking.time) < Date.now()+rules.cancelHours*3600000) return Response.json({error:`Alterações exigem ${rules.cancelHours} horas de antecedência. Fale com o estabelecimento.`},{status:409});
-    if(data.action==='cancel'&&booking.payment_status==='PAID')return Response.json({error:'Pagamento aprovado. Solicite o cancelamento diretamente ao estabelecimento para combinar o reembolso.'},{status:409});
+    if (salonTimeStamp(booking.date,booking.time) < Date.now()+rules.cancelHours*3600000) return Response.json({error:data.action==='cancel'?`O cancelamento precisa ser solicitado com pelo menos ${rules.cancelHours} horas de antecedência. Você ainda pode pedir ajuda pelo chat.`:`Alterações precisam ser solicitadas com pelo menos ${rules.cancelHours} horas de antecedência. Você ainda pode pedir ajuda pelo chat.`,code:'TIME_LIMIT_REACHED',cancelHours:rules.cancelHours},{status:409});
+    if(data.action==='cancel'&&booking.payment_status==='PAID')return Response.json({error:'Este agendamento já foi pago. Solicite o cancelamento pelo chat para que o estabelecimento possa orientar sobre o reembolso.',code:'CONTACT_TO_CANCEL'},{status:409});
     if(booking.date<dayInSalon()||booking.date===dayInSalon()&&Number(booking.time.slice(0,2))*60+Number(booking.time.slice(3))<=minuteInSalon())return Response.json({error:'O atendimento já começou ou passou'},{status:409});
     if(data.action==='cancel'){
-      await database.batch([database.prepare("UPDATE bookings SET status='CANCELLED' WHERE id=? AND user_sub=? AND status<>'CANCELLED'").bind(data.id,viewer.sub),database.prepare('DELETE FROM booked_slots WHERE booking_id=?').bind(data.id),notificationInsert(database,'CANCELLED','Cliente cancelou um agendamento',`${viewer.name} cancelou ${booking.service_name} de ${booking.date.split('-').reverse().join('/')} às ${booking.time}.`,`/admin/agenda?date=${booking.date}`)]);
+      await database.batch([database.prepare("UPDATE bookings SET status='CANCELLED',cancelled_at=? WHERE id=? AND user_sub=? AND status<>'CANCELLED'").bind(new Date().toISOString(),data.id,viewer.sub),database.prepare('DELETE FROM booked_slots WHERE booking_id=?').bind(data.id),notificationInsert(database,'CANCELLED','Cliente cancelou um agendamento',`${viewer.name} cancelou ${booking.service_name} de ${booking.date.split('-').reverse().join('/')} às ${booking.time}.`,`/admin/agenda?date=${booking.date}`)]);
       await deliverOwnerNotifications().catch(()=>{});
       return Response.json({ok:true});
     }

@@ -48,6 +48,7 @@ export const bookings = sqliteTable('bookings', {
   paymentStatus: text('payment_status').notNull().default('PENDING'),
   receiptKey: text('receipt_key'),
   createdAt: text('created_at').notNull(),
+  cancelledAt: text('cancelled_at'),
 });
 
 export const bookedSlots = sqliteTable('booked_slots', {

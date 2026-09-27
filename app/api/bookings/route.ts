@@ -5,6 +5,7 @@ import { expireUnpaidPix, pixExpiresAt } from '@/lib/pix-expiry';
 import { ensureServiceCatalog } from '@/lib/service-catalog';
 import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
 import { sendPush } from '@/lib/push';
+import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
 export async function POST(request: Request) {
   const viewer = await getViewer();
   if (!viewer) return Response.json({ error: 'Entre com Google para confirmar seu horário.' }, { status: 401 });
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     await ensureServiceCatalog();
     const database = db();
     await expireUnpaidPix(database);
+    await cleanupOldCancelledBookings(database);
     const chosen = await database.prepare('SELECT name, duration_min, price_cents, price_variable, allow_in_person_payment, interleaved_blocks FROM services WHERE id = ? AND active = 1').bind(service).first<{ name:string;duration_min: number; price_cents: number; price_variable:number; allow_in_person_payment: number; interleaved_blocks:string|null }>();
     const config = await database.prepare("SELECT value FROM settings WHERE key = 'schedule'").first<{ value: string }>();
     const rules = await database.prepare("SELECT value FROM settings WHERE key = 'booking_rules'").first<{ value: string }>();

@@ -1,16 +1,19 @@
-import { db, unavailable } from '@/lib/server';
+import { db, ownerOnly, unavailable } from '@/lib/server';
 import { availableTimes, parseSchedule, parseBookingRules, parseBlocks, validDate } from '@/lib/booking';
 import { getViewer } from '@/lib/auth';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
+import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
 export async function GET(request: Request) {
   const url = new URL(request.url), service = url.searchParams.get('service'), date = url.searchParams.get('date') || '', month = url.searchParams.get('month');
   if (!service || (month ? !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) : !validDate(date))) return Response.json({ error: 'Selecione serviço e data válidos.' }, { status: 400 });
   try {
     const database = db();
     await expireUnpaidPix(database);
+    await cleanupOldCancelledBookings(database);
     const exclude = url.searchParams.get('exclude');
     const viewer = exclude ? await getViewer() : null;
-    const ownBooking = exclude && viewer ? await database.prepare('SELECT id FROM bookings WHERE id=? AND user_sub=? AND status<>?').bind(exclude,viewer.sub,'CANCELLED').first<{id:string}>() : null;
+    let ownBooking = exclude && viewer ? await database.prepare('SELECT id FROM bookings WHERE id=? AND user_sub=? AND status<>?').bind(exclude,viewer.sub,'CANCELLED').first<{id:string}>() : null;
+    if(exclude&&!ownBooking&&await ownerOnly())ownBooking=await database.prepare("SELECT id FROM bookings WHERE id=? AND status<>'CANCELLED'").bind(exclude).first<{id:string}>();
     const row = await database.prepare('SELECT duration_min, interleaved_blocks FROM services WHERE id = ? AND active = 1').bind(service).first<{ duration_min: number; interleaved_blocks:string|null }>();
     if (!row) return Response.json({ error: 'Serviço indisponível.' }, { status: 404 });
     if (month) {
