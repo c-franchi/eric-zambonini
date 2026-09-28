@@ -398,3 +398,17 @@ body {
 .admin-grid>*{min-width:0;max-width:100%}.admin-block-actions{display:flex;flex-wrap:wrap;gap:10px}.admin-blocked-heading{margin:24px 0 4px;font-size:16px;color:#e8d0a4}.admin-blocked-list{margin-top:10px}.admin-blocked-list li{align-items:center}.admin-blocked-list li>strong{font-variant-numeric:tabular-nums;white-space:nowrap}.admin-blocked-empty{margin:10px 0 0;padding:12px;border:1px dashed #554936;border-radius:8px}.closed-interval-panel>.admin-checkbox{margin:14px 0 18px}.closed-interval-fields{margin-bottom:16px}.admin-user-list{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-user-list li{display:grid;gap:4px;min-width:0;padding:15px;border:1px solid #544630;border-radius:9px;background:#211c17}.admin-user-list li span{font-size:13px;color:#c9a76a;text-transform:uppercase;letter-spacing:.08em}.admin-user-list li strong{overflow-wrap:anywhere;color:#f0e5d5}
 @media(max-width:700px){.admin-main{min-width:0}.admin-grid{gap:14px}.admin-grid .form-panel,.admin-grid .form-panel.full{grid-column:1/-1;width:100%;min-width:0;padding:20px 16px}.admin-grid .form-panel h2{font-size:21px;line-height:1.25;overflow-wrap:anywhere}.admin-form-two{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.admin-grid .stack,.admin-grid form{min-width:0}.admin-grid input,.admin-grid select,.admin-grid textarea{min-width:0;max-width:100%}.day-row{display:grid;gap:4px}.hours{display:flex;flex-wrap:wrap}.hours input{width:min(130px,42vw);max-width:none}.admin-user-list{grid-template-columns:1fr}.admin-user-list li{padding:13px}.admin-blocked-list li{align-items:flex-start}.admin-blocked-list .admin-row-actions{width:100%}.admin-block-actions>.button{flex:1 1 100%}}
 @media(max-width:420px){.admin-main{padding-inline:12px}.admin-grid .form-panel,.admin-grid .form-panel.full{padding:18px 13px}.admin-form-two{grid-template-columns:1fr}.hours{gap:7px}.hours input{width:calc(50% - 28px)}}
+
+/* Evita overflow horizontal no cabeçalho e nas páginas administrativas em mobile */
+@media(max-width:600px){
+  .admin-shell{display:block;width:100%;max-width:100%;overflow-x:clip}
+  .admin-main{width:100%;max-width:100%;min-width:0;padding-inline:12px}
+  .admin-heading{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;justify-content:stretch;gap:12px;width:100%;min-width:0}
+  .admin-heading>div:first-child{width:100%;min-width:0}
+  .admin-heading h1{max-width:100%;font-size:clamp(29px,8vw,34px);line-height:1.12;overflow-wrap:anywhere}
+  .admin-heading-actions{width:100%;min-width:0;justify-content:flex-start;flex-wrap:wrap;gap:10px}
+  .admin-grid{width:100%;min-width:0;grid-template-columns:minmax(0,1fr)}
+  .admin-grid>.form-panel,.admin-grid>section.form-panel{width:100%;max-width:100%;min-width:0}
+  .admin-grid .form-panel p,.admin-grid .form-panel label,.admin-grid .form-panel h2{max-width:100%;overflow-wrap:anywhere}
+  .admin-user-list,.admin-user-list li{width:100%;min-width:0}
+}
