@@ -258,6 +258,30 @@ body {
 @media(max-width:900px){.admin-mobile-bar{min-height:72px;padding:10px 17px}.admin-sidebar{background:linear-gradient(180deg,#191512,#12100e)}}
 .google-loading,.google-consent-hint{margin:8px 0 0;text-align:center;color:#cfc4b4;font-size:14px;line-height:1.5}.google-login>div[aria-label="Continuar com Google"]{display:flex;justify-content:center;min-height:44px}.google-login iframe{max-width:100%}
 
+/* Acesso administrativo: fluxo vertical e legível em telas estreitas. */
+.admin-access-page{width:min(100% - 32px,760px);min-height:100svh;margin-inline:auto;padding:env(safe-area-inset-top, 12px) 0 42px;display:block}
+.admin-access-header{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #80664255}
+.admin-access-brand{display:block;width:min(340px,calc(100vw - 150px));line-height:0;flex:none}
+.admin-access-brand img{display:block;width:100%;height:auto;max-height:50px;object-fit:contain;object-position:left center}
+.admin-access-back{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid #806642;border-radius:999px;color:#f0d29b;font-size:14px;white-space:nowrap}
+.admin-access-card{width:min(100%,600px);margin:32px auto 48px;padding:clamp(22px,5vw,40px);background:linear-gradient(145deg,#28211a,#191715 70%);border:1px solid #8a704c;border-radius:18px;box-shadow:0 24px 75px #0008}
+.admin-access-card .eyebrow{margin:0 0 9px;font-size:13px;letter-spacing:.18em;color:#d8ad70}
+.admin-access-card h1{font-size:clamp(36px,7vw,50px);line-height:1.08;margin:0 0 12px;overflow-wrap:normal}
+.admin-access-intro{font-size:18px;line-height:1.5;color:#f0e6d6;margin:0 0 10px}
+.admin-access-hint{color:#c9bba8;margin:0 0 22px}
+.admin-access-warning{margin:0 0 20px;padding:14px;border-left:3px solid #e6b878;background:#392b20;overflow-wrap:anywhere}
+.admin-access-action{min-height:0;width:100%}
+.admin-access-action .google-login{display:grid;grid-template-columns:minmax(0,1fr);justify-content:stretch;gap:12px;width:100%;margin:0}
+.admin-access-action .legal-acceptance{grid-template-columns:20px minmax(0,1fr);width:100%;padding:13px;line-height:1.5}
+.admin-access-action .google-consent-hint{margin:0;text-align:left}
+.google-consent-button{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:52px;padding:12px 16px;border:1px solid #8b744f;border-radius:8px;background:#30271d;color:#f4dfb9;font-weight:700}
+.google-consent-button:disabled{opacity:.9;cursor:not-allowed}
+.google-consent-mark{font:bold 22px Arial,sans-serif;line-height:1;background:conic-gradient(from -45deg,#4285f4 0 25%,#34a853 0 50%,#fbbc05 0 75%,#ea4335 0);color:transparent;background-clip:text}
+.admin-access-action .google-loading{margin:0;text-align:left}
+.admin-access-action .google-login>div[aria-label="Continuar com Google"]{justify-content:flex-start}
+.admin-access-home{display:inline-flex;align-items:center;min-height:44px;margin-top:22px;padding:8px 0;color:#e9c38a;text-decoration:underline;text-underline-offset:4px}
+@media(max-width:560px){.admin-access-page{width:calc(100% - 32px);padding-bottom:30px}.admin-access-header{min-height:68px;gap:10px}.admin-access-brand{width:min(260px,calc(100vw - 145px))}.admin-access-brand img{max-height:42px}.admin-access-back{min-height:40px;padding:7px 10px;font-size:13px}.admin-access-card{margin:22px auto 28px;padding:22px 18px;border-radius:15px}.admin-access-card h1{font-size:clamp(35px,10vw,43px)}.admin-access-intro{font-size:17px}.admin-access-hint{margin-bottom:18px}.admin-access-action .legal-acceptance{padding:12px;gap:9px;font-size:14px}.admin-access-home{margin-top:16px}}
+
 /* Navegação consistente e área do cliente */
 .client-topbar{min-height:82px;margin-bottom:48px;padding:12px 18px;border:1px solid #80664255;border-top:0;border-radius:0 0 15px 15px;background:#171411;}
 .client-brand{display:block;flex:none;width:min(310px,42vw);line-height:0}
