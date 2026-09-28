@@ -1,6 +1,6 @@
 import { getViewer } from '@/lib/auth';
 import { db, unavailable } from '@/lib/server';
-import { dayInSalon, minuteInSalon, validDate, availableTimes, parseSchedule, parseBookingRules, parseBlocks, occupiedSlotsFor, salonTimeStamp } from '@/lib/booking';
+import { dayInSalon, minuteInSalon, validDate, availableTimes, parseSchedule, parseBookingRules, parseBlocks, parseClosedInterval, occupiedSlotsFor, salonTimeStamp } from '@/lib/booking';
 import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
 export async function PATCH(request:Request){
   const viewer=await getViewer();if(!viewer)return Response.json({error:'Entre com Google'},{status:401});
@@ -21,9 +21,9 @@ export async function PATCH(request:Request){
     }
     if(!data.date||!validDate(data.date)||!data.time||!/^([01]\d|2[0-3]):(00|15|30|45)$/.test(data.time))return Response.json({error:'Escolha uma data e horário válidos'},{status:400});
     if(data.date===booking.date&&data.time===booking.time)return Response.json({ok:true});
-    const [settings,used,blocked]=await Promise.all([database.prepare("SELECT value FROM settings WHERE key='schedule'").first<{value:string}>(),database.prepare('SELECT slot FROM booked_slots WHERE date=? AND booking_id<>?').bind(data.date,data.id).all<{slot:string}>(),database.prepare('SELECT slot FROM blocked_slots WHERE date=?').bind(data.date).all<{slot:string}>()]);
+    const [settings,used,blocked,interval]=await Promise.all([database.prepare("SELECT value FROM settings WHERE key='schedule'").first<{value:string}>(),database.prepare('SELECT slot FROM booked_slots WHERE date=? AND booking_id<>?').bind(data.date,data.id).all<{slot:string}>(),database.prepare('SELECT slot FROM blocked_slots WHERE date=?').bind(data.date).all<{slot:string}>(),database.prepare("SELECT value FROM settings WHERE key='closed_interval'").first<{value:string}>()]);
     const blocks=parseBlocks(booking.interleaved_blocks,booking.duration_min);
-    if(!availableTimes(data.date,booking.duration_min,parseSchedule(settings?.value),new Set([...used.results,...blocked.results].map(x=>x.slot)),rules,blocks).includes(data.time))return Response.json({error:'Horário indisponível'},{status:409});
+    if(!availableTimes(data.date,booking.duration_min,parseSchedule(settings?.value),new Set([...used.results,...blocked.results].map(x=>x.slot)),rules,blocks,parseClosedInterval(interval?.value)).includes(data.time))return Response.json({error:'Horário indisponível'},{status:409});
     await database.batch([database.prepare('DELETE FROM booked_slots WHERE booking_id=?').bind(data.id),database.prepare('UPDATE bookings SET date=?,time=? WHERE id=? AND user_sub=?').bind(data.date,data.time,data.id,viewer.sub),...occupiedSlotsFor(data.time,booking.duration_min,blocks).map(slot=>database.prepare('INSERT INTO booked_slots (booking_id,date,slot) VALUES (?,?,?)').bind(data.id,data.date,slot)),notificationInsert(database,'RESCHEDULED','Cliente remarcou um agendamento',`${viewer.name} remarcou ${booking.service_name} de ${booking.date.split('-').reverse().join('/')} às ${booking.time} para ${data.date.split('-').reverse().join('/')} às ${data.time}.`,`/admin/agenda?date=${data.date}`)]);
     await deliverOwnerNotifications().catch(()=>{});
     return Response.json({ok:true});

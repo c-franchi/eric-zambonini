@@ -1,6 +1,6 @@
 import { db, unavailable } from '@/lib/server';
 import { getViewer } from '@/lib/auth';
-import { availableTimes, parseSchedule, parseBookingRules, parseBlocks, occupiedSlotsFor, validDate } from '@/lib/booking';
+import { availableTimes, parseSchedule, parseBookingRules, parseBlocks, parseClosedInterval, occupiedSlotsFor, validDate } from '@/lib/booking';
 import { expireUnpaidPix, pixExpiresAt } from '@/lib/pix-expiry';
 import { ensureServiceCatalog } from '@/lib/service-catalog';
 import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
@@ -24,13 +24,14 @@ export async function POST(request: Request) {
     const chosen = await database.prepare('SELECT name, duration_min, price_cents, price_variable, allow_in_person_payment, interleaved_blocks FROM services WHERE id = ? AND active = 1').bind(service).first<{ name:string;duration_min: number; price_cents: number; price_variable:number; allow_in_person_payment: number; interleaved_blocks:string|null }>();
     const config = await database.prepare("SELECT value FROM settings WHERE key = 'schedule'").first<{ value: string }>();
     const rules = await database.prepare("SELECT value FROM settings WHERE key = 'booking_rules'").first<{ value: string }>();
+    const interval = await database.prepare("SELECT value FROM settings WHERE key='closed_interval'").first<{value:string}>();
     if (!chosen) return Response.json({ error: 'Serviço indisponível.' }, { status: 404 });
     if(chosen.price_variable&&payload.payment_method==='PIX')return Response.json({error:'O valor desse serviço é combinado após avaliação; reserve sem pagamento antecipado.'},{status:400});
     if(payload.payment_method && !['PIX','IN_PERSON'].includes(payload.payment_method))return Response.json({error:'Forma de pagamento inválida.'},{status:400});
     if((payload.payment_method||'IN_PERSON')==='IN_PERSON'&&!chosen.allow_in_person_payment)return Response.json({error:'Esse serviço requer Pix. Selecione pagamento Pix.'},{status:409});
     if(payload.payment_method==='PIX' && !await database.prepare("SELECT 1 FROM settings WHERE key='pix'").first())return Response.json({error:'Pagamento Pix ainda não configurado. Escolha pagar no atendimento.'},{status:409});
     const occupiedSlots=occupiedSlotsFor(time,chosen.duration_min,parseBlocks(chosen.interleaved_blocks,chosen.duration_min));
-    if (!availableTimes(date, chosen.duration_min, parseSchedule(config?.value), new Set(), parseBookingRules(rules?.value),parseBlocks(chosen.interleaved_blocks,chosen.duration_min)).includes(time)) return Response.json({ error: 'Horário fora da agenda.' }, { status: 400 });
+    if (!availableTimes(date, chosen.duration_min, parseSchedule(config?.value), new Set(), parseBookingRules(rules?.value),parseBlocks(chosen.interleaved_blocks,chosen.duration_min),parseClosedInterval(interval?.value)).includes(time)) return Response.json({ error: 'Horário fora da agenda.' }, { status: 400 });
     const blocked = await database.prepare('SELECT slot FROM blocked_slots WHERE date = ?').bind(date).all<{slot:string}>();
     if (occupiedSlots.some(slot => blocked.results.some(row => row.slot === slot))) return Response.json({error:'Horário bloqueado. Escolha outro.'},{status:409});
     const id = crypto.randomUUID(),createdAt=new Date().toISOString(),isPix=payload.payment_method==='PIX';

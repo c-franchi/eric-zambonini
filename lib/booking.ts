@@ -30,6 +30,18 @@ export function minuteInSalon() {
 }
 export type BookingRules = { minHours: number; maxDays: number; cancelHours: number };
 export const defaultBookingRules: BookingRules = { minHours: 2, maxDays: 60, cancelHours: 12 };
+export type ClosedInterval = { enabled: boolean; start: string; end: string };
+export const defaultClosedInterval: ClosedInterval = { enabled: true, start: '11:30', end: '14:00' };
+const bookingTimePattern = /^([01]\d|2[0-3]):(00|15|30|45)$/;
+export function validClosedInterval(value: unknown): value is ClosedInterval {
+  if (!value || typeof value !== 'object') return false;
+  const interval = value as Partial<ClosedInterval>;
+  return typeof interval.enabled === 'boolean' && typeof interval.start === 'string' && bookingTimePattern.test(interval.start) && typeof interval.end === 'string' && bookingTimePattern.test(interval.end) && interval.start < interval.end;
+}
+export function parseClosedInterval(value: string | undefined | null): ClosedInterval {
+  if (!value) return defaultClosedInterval;
+  try { const parsed: unknown = JSON.parse(value); return validClosedInterval(parsed) ? parsed : defaultClosedInterval; } catch { return defaultClosedInterval; }
+}
 export function parseBookingRules(value: string | undefined | null): BookingRules {
   try {
     const parsed = JSON.parse(value || '{}');
@@ -59,15 +71,17 @@ export function slotsFor(time: string, duration: number) {
     return `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`;
   });
 }
-export function availableTimes(date: string, duration: number, schedule: Record<string, [string, string] | null>, occupied: Set<string>, rules: BookingRules = defaultBookingRules, blocks:TimeBlock[]|null=null) {
+export function availableTimes(date: string, duration: number, schedule: Record<string, [string, string] | null>, occupied: Set<string>, rules: BookingRules = defaultBookingRules, blocks:TimeBlock[]|null=null, closedInterval: ClosedInterval = defaultClosedInterval) {
   if (!validDate(date) || date < dayInSalon() || duration <= 0) return [];
   if ((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${dayInSalon()}T12:00:00Z`)) / 86400000 > rules.maxDays) return [];
   const range = schedule[String(weekday(date))];
   if (!range) return [];
   const toMin = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3));
   const start = toMin(range[0]), end = toMin(range[1]);
+  const closedStart = toMin(closedInterval.start), closedEnd = toMin(closedInterval.end);
   const times: string[] = [];
   for (let min = start; min + duration <= end; min += 15) {
+    if (closedInterval.enabled && min < closedEnd && min + duration > closedStart) continue;
     if (date === dayInSalon() && min <= minuteInSalon()) continue;
     const label = `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
     if (salonTimeStamp(date, label) < Date.now() + rules.minHours * 3600000) continue;

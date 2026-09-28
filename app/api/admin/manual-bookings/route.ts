@@ -1,5 +1,5 @@
 import { db, ownerOnly, unavailable } from '@/lib/server';
-import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, validDate } from '@/lib/booking';
+import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, parseClosedInterval, validDate } from '@/lib/booking';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
 import { ensureServiceCatalog } from '@/lib/service-catalog';
 import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
@@ -17,13 +17,14 @@ export async function POST(request:Request){
     const chosen=await database.prepare('SELECT name,duration_min,price_cents,price_variable,interleaved_blocks FROM services WHERE id=? AND active=1').bind(service).first<{name:string;duration_min:number;price_cents:number;price_variable:number;interleaved_blocks:string|null}>();
     if(!chosen)return Response.json({error:'Serviço indisponível.'},{status:404});
     if(chosen.price_variable&&payment==='PAID_NOW')return Response.json({error:'Esse serviço ainda não possui valor definido. Registre pagamento no atendimento.'},{status:400});
-    const [settings,rules,blocked]=await Promise.all([
+    const [settings,rules,blocked,interval]=await Promise.all([
       database.prepare("SELECT value FROM settings WHERE key='schedule'").first<{value:string}>(),
       database.prepare("SELECT value FROM settings WHERE key='booking_rules'").first<{value:string}>(),
       database.prepare('SELECT slot FROM blocked_slots WHERE date=?').bind(date).all<{slot:string}>(),
+      database.prepare("SELECT value FROM settings WHERE key='closed_interval'").first<{value:string}>(),
     ]);
     const blocks=parseBlocks(chosen.interleaved_blocks,chosen.duration_min);
-    if(!availableTimes(date,chosen.duration_min,parseSchedule(settings?.value),new Set(blocked.results.map(x=>x.slot)),parseBookingRules(rules?.value),blocks).includes(time))return Response.json({error:'Horário indisponível. Escolha outro.'},{status:409});
+    if(!availableTimes(date,chosen.duration_min,parseSchedule(settings?.value),new Set(blocked.results.map(x=>x.slot)),parseBookingRules(rules?.value),blocks,parseClosedInterval(interval?.value)).includes(time))return Response.json({error:'Horário indisponível. Escolha outro.'},{status:409});
     const slots=occupiedSlotsFor(time,chosen.duration_min,blocks),id=crypto.randomUUID();
     await database.batch([
       database.prepare(`INSERT INTO bookings(id,service_id,user_sub,date,time,name,phone,status,created_at,price_cents,price_variable,payment_method,payment_status)

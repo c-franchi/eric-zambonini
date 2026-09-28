@@ -2,7 +2,7 @@ import { db, ownerOnly, unavailable } from '@/lib/server';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
 import { sendPush } from '@/lib/push';
 import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
-import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, validDate } from '@/lib/booking';
+import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, parseClosedInterval, validDate } from '@/lib/booking';
 import { env } from 'cloudflare:workers';
 export async function DELETE(request: Request) {
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
@@ -63,14 +63,15 @@ export async function PATCH(request: Request) {
       if(!service)return Response.json({error:'Selecione um serviço ativo.'},{status:404});
       const serviceChanged=serviceId!==row.service_id;
       if(serviceChanged&&(row.payment_status==='PAID'||row.payment_status==='REVIEW'))return Response.json({error:'Este pagamento já foi aprovado ou está em análise. Conclua a análise ou cancele a reserva antes de trocar o serviço.'},{status:409});
-      const [schedule,rulesRow,used,blocked]=await Promise.all([
+      const [schedule,rulesRow,used,blocked,interval]=await Promise.all([
         database.prepare("SELECT value FROM settings WHERE key='schedule'").first<{value:string}>(),
         database.prepare("SELECT value FROM settings WHERE key='booking_rules'").first<{value:string}>(),
         database.prepare('SELECT slot FROM booked_slots WHERE date=? AND booking_id<>?').bind(date,data.id).all<{slot:string}>(),
         database.prepare('SELECT slot FROM blocked_slots WHERE date=?').bind(date).all<{slot:string}>(),
+        database.prepare("SELECT value FROM settings WHERE key='closed_interval'").first<{value:string}>(),
       ]);
       const blocks=parseBlocks(service.interleaved_blocks,service.duration_min);
-      if(!availableTimes(date,service.duration_min,parseSchedule(schedule?.value),new Set([...used.results,...blocked.results].map(item=>item.slot)),parseBookingRules(rulesRow?.value),blocks).includes(time))return Response.json({error:'Esse horário não está mais disponível ou está fora do expediente.'},{status:409});
+      if(!availableTimes(date,service.duration_min,parseSchedule(schedule?.value),new Set([...used.results,...blocked.results].map(item=>item.slot)),parseBookingRules(rulesRow?.value),blocks,parseClosedInterval(interval?.value)).includes(time))return Response.json({error:'Esse horário não está mais disponível ou está fora do expediente.'},{status:409});
       let paymentMethod=row.payment_method,paymentStatus=row.payment_status,priceCents=row.price_cents,priceVariable=row.price_variable,receiptKey=row.receipt_key;
       if(serviceChanged){
         priceCents=service.price_cents;priceVariable=service.price_variable;
