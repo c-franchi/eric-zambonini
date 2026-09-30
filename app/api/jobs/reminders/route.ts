@@ -1,12 +1,13 @@
 import { env } from 'cloudflare:workers';
 import { db } from '@/lib/server';
-import { salonTimeStamp } from '@/lib/booking';
+import { dayInSalon, salonTimeStamp } from '@/lib/booking';
 import { sendPush, sendOwnerPush } from '@/lib/push';
 import { sendClientReminderEmail } from '@/lib/reminder-email';
 import { notificationSettings } from '@/lib/owner-notifications';
 import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
 
 type ReminderRow={id:string;user_sub:string|null;email:string|null;date:string;time:string;service_name:string;name:string};
+type PendingPaymentRow={id:string;date:string;time:string;name:string;payment_status:string;payment_method:string;service_name:string;duration_min:number};
 const siteUrl='https://ericzambonini.com.br';
 
 // Invoked every 15 minutes by the external scheduler. Each stage is deduplicated
@@ -19,7 +20,7 @@ export async function POST(request:Request){
  const now=Date.now();
  const from=new Date(now-86400000).toISOString().slice(0,10),through=new Date(now+3*86400000).toISOString().slice(0,10);
  const rows=(await database.prepare("SELECT b.id,b.user_sub,b.date,b.time,b.name,s.name AS service_name,u.email FROM bookings b JOIN services s ON s.id=b.service_id LEFT JOIN users u ON u.sub=b.user_sub WHERE b.status='CONFIRMED' AND b.date>=? AND b.date<=? LIMIT 300").bind(from,through).all<ReminderRow>()).results;
- let reminders=0,clientPushSent=0,clientPushMissing=0,clientEmailSent=0,clientEmailUnavailable=0,ownerPushSent=0,ownerPushMissing=0,failures=0;
+ let reminders=0,clientPushSent=0,clientPushMissing=0,clientEmailSent=0,clientEmailUnavailable=0,ownerPushSent=0,ownerPushMissing=0,paymentFollowups=0,failures=0;
  const senderConfigured=Boolean((env as unknown as Record<string,string|undefined>).RESEND_API_KEY&&(await notificationSettings()).from);
  for(const row of rows){
   const remaining=(salonTimeStamp(row.date,row.time)-now)/3600000;
@@ -54,10 +55,31 @@ export async function POST(request:Request){
    }catch{await database.prepare('DELETE FROM settings WHERE key=?').bind(marker).run().catch(()=>{});failures++}
   }else clientEmailUnavailable++;
  }
+ // After an appointment has ended, remind the professional once per day while
+ // its payment is still open. Keep one notification per booking in the inbox.
+ const today=dayInSalon();
+ const pendingPayments=(await database.prepare("SELECT b.id,b.date,b.time,b.name,b.payment_status,b.payment_method,s.name AS service_name,s.duration_min FROM bookings b JOIN services s ON s.id=b.service_id WHERE b.status='CONFIRMED' AND b.payment_status<>'PAID' AND b.date<=? ORDER BY b.date DESC,b.time DESC LIMIT 300").bind(today).all<PendingPaymentRow>()).results;
+ for(const booking of pendingPayments){
+  if(Date.now()<salonTimeStamp(booking.date,booking.time)+booking.duration_min*60000+30*60000)continue;
+  const marker=`payment_followup:last:${booking.id}`;
+  try{
+   const claim=await database.prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE settings.value<>excluded.value").bind(marker,today).run();
+   if(!claim.meta.changes)continue;
+   const id=`payment-followup:${booking.id}`;
+   const date=booking.date.split('-').reverse().join('/');
+   const detail=booking.payment_status==='REVIEW'?'Comprovante Pix aguardando conferência.':booking.payment_method==='PIX'?'Pagamento via Pix ainda sem baixa.':'Pagamento no atendimento ainda sem baixa.';
+   const title='Pagamento pendente após atendimento';
+   const body=`${booking.name} — ${booking.service_name}, realizado em ${date} às ${booking.time}. ${detail}`;
+   await database.prepare("INSERT INTO owner_notifications(id,kind,title,body,link,created_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,title=excluded.title,body=excluded.body,link=excluded.link,created_at=excluded.created_at,read_at=NULL").bind(id,'PAYMENT_PENDING',title,body,'/admin/finance',new Date().toISOString()).run();
+   const ownerResult=await sendOwnerPush(`${id}:${today}`,title,body,'/admin/finance');
+   ownerPushSent+=ownerResult.sent;ownerPushMissing+=ownerResult.subscribed===0?1:0;
+   paymentFollowups++;
+  }catch{failures++}
+ }
  // Process any queued owner emails and other recent admin notifications on every run.
  try{
   const { deliverOwnerNotifications }=await import('@/lib/owner-notifications');
   await deliverOwnerNotifications();
  }catch{failures++}
- return Response.json({ok:true,reminders,clientPushSent,clientPushMissing,clientEmailSent,clientEmailUnavailable,ownerPushSent,ownerPushMissing,failures,removedCancelled});
+ return Response.json({ok:true,reminders,clientPushSent,clientPushMissing,clientEmailSent,clientEmailUnavailable,ownerPushSent,ownerPushMissing,paymentFollowups,failures,removedCancelled});
 }

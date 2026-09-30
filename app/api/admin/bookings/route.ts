@@ -2,6 +2,7 @@ import { db, ownerOnly, unavailable } from '@/lib/server';
 import { expireUnpaidPix } from '@/lib/pix-expiry';
 import { sendPush } from '@/lib/push';
 import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
+import { clearPaymentFollowup } from '@/lib/payment-followup';
 import { availableTimes, occupiedSlotsFor, parseBlocks, parseBookingRules, parseSchedule, parseClosedInterval, validDate } from '@/lib/booking';
 import { env } from 'cloudflare:workers';
 export async function DELETE(request: Request) {
@@ -95,6 +96,7 @@ export async function PATCH(request: Request) {
       if (row.status === 'CANCELLED' || row.payment_method !== 'IN_PERSON') return Response.json({ error: 'Pagamento no atendimento indisponível' }, { status: 409 });
       if(row.price_variable)return Response.json({error:'Defina o valor combinado antes de marcar como pago.'},{status:409});
       await database.prepare("UPDATE bookings SET payment_status='PAID' WHERE id=?").bind(data.id).run();
+      await clearPaymentFollowup(database,data.id);
     }
     if(row.user_sub)await sendPush(row.user_sub,`${data.id}:${data.action}`,data.action==='cancel'?'Agendamento cancelado':data.action==='quote'?'Valor do serviço atualizado':'Pagamento confirmado',data.action==='cancel'?`O horário de ${row.date.split('-').reverse().join('/')} às ${row.time} foi cancelado.${row.payment_status==='PAID'?' Entre em contato com o estabelecimento para tratar do reembolso.':''}`:'Confira os detalhes no aplicativo.','/cliente').catch(()=>{});
     return Response.json({ ok: true });
