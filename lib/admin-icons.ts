@@ -1,4 +1,4 @@
-import { CalendarPlus2, LayoutDashboard, CalendarDays, MessageCircle, Scissors, Images, Wallet, Settings, UserRound, UsersRound, ShoppingBag, Package, type LucideIcon } from 'lucide-react';
+import { CalendarPlus2, LayoutDashboard, CalendarDays, MessageCircle, Scissors, Images, Wallet, Settings, UserRound, UsersRound, ShoppingBag, Package, BadgeCheck, Palette, type LucideIcon } from 'lucide-react';
 import type { adminItems } from './admin-nav';
 
 // Key by section rather than menu position. Type checking requires every section.
@@ -15,4 +15,6 @@ export const adminIcons = {
   usuarios: UsersRound,
   loja: ShoppingBag,
   estoque: Package,
+  identidade: Palette,
+  assinatura: BadgeCheck,
 } satisfies Record<(typeof adminItems)[number]['slug'], LucideIcon>;

@@ -1,7 +1,10 @@
+import {requireModule} from '@/lib/licensing';
 import { db, ownerOnly, unavailable } from '@/lib/server';
 import { ensureStoreSchema } from '@/lib/store-schema';
 
 export async function PATCH(request:Request){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
   let data:{id?:string;status?:string;payment_status?:string};try{data=await request.json()}catch{return Response.json({error:'Dados inválidos'},{status:400})}
   if(!data.id||data.status!==undefined&&!['PENDING','CONFIRMED','READY','DELIVERED','CANCELLED'].includes(data.status)||data.payment_status!==undefined&&!['DUE_AT_APPOINTMENT','DUE_AT_PICKUP','AWAITING_PIX','PAID'].includes(data.payment_status)||data.status===undefined&&data.payment_status===undefined)return Response.json({error:'Atualização inválida.'},{status:400});

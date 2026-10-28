@@ -1,7 +1,9 @@
+import installation from '@/lib/installation';
 import { db } from '@/lib/server';
 
 // One-time content update. The marker prevents later administrator edits from being overwritten.
 export async function ensureServiceCatalog() {
+  if(!installation.legacyServiceCatalog)return;
   const database=db();
   const marker=await database.prepare("SELECT value FROM settings WHERE key='service_catalog_2026_09_26'").first();
   if(marker)return;

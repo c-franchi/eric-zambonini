@@ -1,3 +1,4 @@
+import {requireModule} from '@/lib/licensing';
 import { waitUntil } from 'cloudflare:workers';
 import { getViewer } from '@/lib/auth';
 import { db, unavailable } from '@/lib/server';
@@ -11,6 +12,8 @@ type Reserved={product:Product;quantity:number;preorder:boolean};
 const money=(cents:number)=>(cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
 export async function GET(){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   const viewer=await getViewer();if(!viewer)return Response.json({error:'Entre na sua conta para consultar pedidos.'},{status:401});
   try{
     await ensureStoreSchema();const database=db();
@@ -20,11 +23,13 @@ export async function GET(){
     ]);
     const salesWithItems=await Promise.all(sales.results.map(async order=>({...order,items:(await database.prepare('SELECT product_name,unit_price_cents,quantity,is_preorder FROM product_sale_items WHERE sale_id=?').bind(order.id).all()).results})));
     const legacyWithItems=await Promise.all(legacy.results.map(async order=>({...order,items:(await database.prepare('SELECT product_name,unit_price_cents,quantity,is_preorder FROM product_order_items WHERE order_id=?').bind(order.id).all()).results})));
-    return Response.json([...salesWithItems,...legacyWithItems].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))),{headers:{'cache-control':'no-store'}});
+    return Response.json([...salesWithItems,...legacyWithItems].sort((a,b)=>String((b as Record<string,unknown>).created_at).localeCompare(String((a as Record<string,unknown>).created_at))),{headers:{'cache-control':'no-store'}});
   }catch{return unavailable()}
 }
 
 export async function POST(request:Request){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   const viewer=await getViewer();
   let data:{request_id?:string;items?:RequestedItem[];payment_method?:string;customer_name?:string;customer_email?:string;customer_phone?:string};try{data=await request.json()}catch{return Response.json({error:'Dados inválidos.'},{status:400})}
   if(!data.request_id||!/^[\da-f-]{36}$/i.test(data.request_id)||!Array.isArray(data.items)||data.items.length<1||data.items.length>20||!['PIX','PICKUP'].includes(data.payment_method||''))return Response.json({error:'Confira o pedido e a forma de pagamento.'},{status:400});

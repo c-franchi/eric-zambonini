@@ -1,8 +1,9 @@
+import installation from '@/lib/installation';
 import { env } from 'cloudflare:workers';
 import { headers } from 'next/headers';
 import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
 
-const cookieName = 'eric_session';
+const cookieName = `${installation.cookieNamespace}_session`;
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 export type Viewer = { sub: string; email: string; name: string };
 const runtime = () => env as unknown as Record<string, string | undefined>;
@@ -29,6 +30,7 @@ export async function getViewer(): Promise<Viewer | null> {
   try {
     const { payload } = await jwtVerify(token, signingKey(), { algorithms: ['HS256'] });
     if (!payload.sub || typeof payload.email !== 'string' || typeof payload.name !== 'string') return null;
+    if(!env.DB)return null;
     const account = await env.DB.prepare('SELECT email FROM users WHERE sub = ?').bind(payload.sub).first<{ email: string }>();
     if (!account || account.email.trim().toLowerCase() !== payload.email.trim().toLowerCase()) return null;
     return { sub: payload.sub, email: payload.email, name: payload.name };

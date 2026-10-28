@@ -1,3 +1,4 @@
+import {getBrand} from '@/lib/site-settings';
 import { env } from 'cloudflare:workers';
 import { db } from '@/lib/server';
 import { dayInSalon, salonTimeStamp } from '@/lib/booking';
@@ -8,13 +9,14 @@ import { cleanupOldCancelledBookings } from '@/lib/cancelled-booking-cleanup';
 
 type ReminderRow={id:string;user_sub:string|null;email:string|null;date:string;time:string;service_name:string;name:string};
 type PendingPaymentRow={id:string;date:string;time:string;name:string;payment_status:string;payment_method:string;service_name:string;duration_min:number};
-const siteUrl='https://ericzambonini.com.br';
+
 
 // Invoked every 15 minutes by the external scheduler. Each stage is deduplicated
 // independently so retries in its 30-minute window cannot send duplicate reminders.
 export async function POST(request:Request){
  const token=(env as unknown as Record<string,string|undefined>).REMINDER_JOB_SECRET;
  if(!token||request.headers.get('authorization')!==`Bearer ${token}`)return Response.json({error:'Acesso negado'},{status:403});
+ const {siteUrl}=await getBrand();
  const database=db();
  const removedCancelled=await cleanupOldCancelledBookings(database);
  const now=Date.now();

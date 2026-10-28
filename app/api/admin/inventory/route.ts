@@ -1,7 +1,10 @@
+import {requireModule} from '@/lib/licensing';
 import { db, ownerOnly, unavailable } from '@/lib/server';
 import { getViewer } from '@/lib/auth';
 import { inventoryStatements, operationPayload, validInventoryOperation } from '@/lib/inventory-operations';
 export async function GET(){
+ const moduleDenied=await requireModule('estoque');if(moduleDenied)return moduleDenied;
+
  if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
  try{
   const database=db();const [products,movements]=await Promise.all([
@@ -12,6 +15,8 @@ export async function GET(){
  }catch{return unavailable()}
 }
 export async function POST(request:Request){
+ const moduleDenied=await requireModule('estoque');if(moduleDenied)return moduleDenied;
+
  if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
  const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return Response.json({error:'Origem não autorizada'},{status:403});
  let value:unknown;try{value=await request.json()}catch{return Response.json({error:'Dados inválidos'},{status:400})}

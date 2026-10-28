@@ -1,3 +1,4 @@
+import installation from '@/lib/installation';
 import { db } from '@/lib/server';
 import { createSession, sessionCookie } from '@/lib/auth';
 import { hashPassword, verifyPassword } from '@/lib/password';
@@ -8,7 +9,7 @@ export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return fail('Origem inválida.',403);
   if(!request.headers.get('content-type')?.startsWith('application/json'))return fail('Formato inválido.',415);
   let input:Input;try{input=await request.json()}catch{return fail('Dados inválidos.')}
-  const cookieCsrf=request.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith('eric_csrf='))?.slice(10);
+  const cookieCsrf=request.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${installation.cookieNamespace}_csrf=`))?.slice(installation.cookieNamespace.length+6);
   if(!input.csrf||!cookieCsrf||input.csrf!==cookieCsrf)return fail('Verificação de segurança inválida.',403);
   if(input.acceptedLegal!==true||input.legalVersion!=='2026-09-26')return fail('Aceite os Termos de Serviço e confirme que está ciente da Política de Privacidade.',400);
   const email=typeof input.email==='string'?input.email.trim().toLowerCase():'';

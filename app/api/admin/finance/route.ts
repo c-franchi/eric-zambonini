@@ -1,5 +1,8 @@
+import {requireModule} from '@/lib/licensing';
 import { db, ownerOnly, unavailable } from '@/lib/server';
 export async function GET(request:Request){
+ const moduleDenied=await requireModule('financeiro');if(moduleDenied)return moduleDenied;
+
  if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
  const month=new URL(request.url).searchParams.get('month');if(!month||!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return Response.json({error:'Mês inválido'},{status:400});
  try{const database=db();const row=await database.prepare(`SELECT COUNT(*) AS total,

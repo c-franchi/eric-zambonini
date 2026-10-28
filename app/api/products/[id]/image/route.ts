@@ -1,8 +1,11 @@
+import {requireModule} from '@/lib/licensing';
 import { env } from 'cloudflare:workers';
 import { db } from '@/lib/server';
 import { ensureStoreSchema } from '@/lib/store-schema';
 
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}) {
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   try {
     const {id}=await params;
     await ensureStoreSchema();

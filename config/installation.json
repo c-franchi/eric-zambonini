@@ -1,0 +1,23 @@
+{
+  "installationId": "eric-zambonini",
+  "templateVersion": 1,
+  "defaultPlan": "premium",
+  "adminEmails": [
+    "neifranchi@gmail.com",
+    "eric.cabeleireiro@gmail.com"
+  ],
+  "platformAdminEmails": [
+    "neifranchi@gmail.com"
+  ],
+  "legacyServiceCatalog": true,
+  "legacyPixMigration": {
+    "key": "16 99776-2019",
+    "name": "Eric zambonini",
+    "replacement": {
+      "key": "+5516997762016",
+      "name": "Eric Henrique Zambonini",
+      "city": "Araraquara"
+    }
+  },
+  "cookieNamespace": "eric"
+}

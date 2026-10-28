@@ -1,3 +1,4 @@
+import {requireModule} from '@/lib/licensing';
 import { env } from 'cloudflare:workers';
 import { db, ownerOnly, unavailable } from '@/lib/server';
 import { ensureStoreSchema } from '@/lib/store-schema';
@@ -8,6 +9,8 @@ function imageFiles(form:FormData){const files=form.getAll('images').filter(imag
 function validImages(files:File[]){return files.length<=8&&files.every(file=>file.size<=8*1024*1024&&['image/jpeg','image/png','image/webp'].includes(file.type))&&files.reduce((total,file)=>total+file.size,0)<=32*1024*1024}
 
 export async function GET(){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
   try{
     await ensureStoreSchema();const database=db();
@@ -24,6 +27,8 @@ export async function GET(){
 }
 
 export async function POST(request:Request){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
   let form:FormData;try{form=await request.formData()}catch{return Response.json({error:'Formulário inválido.'},{status:400})}
   const name=form.get('name'),description=form.get('description'),price=parsePositive(form.get('price_cents'),100000000),stock=parsePositive(form.get('stock'),100000),minimumStock=parsePositive(form.get('minimum_stock')??'0',100000),unitCost=parsePositive(form.get('unit_cost_cents')??'0',100000000),allowPreorder=form.get('allow_preorder')==='true',files=imageFiles(form);
@@ -42,6 +47,8 @@ export async function POST(request:Request){
 }
 
 export async function PATCH(request:Request){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
   let form:FormData;try{form=await request.formData()}catch{return Response.json({error:'Formulário inválido.'},{status:400})}
   if(form.get('visibility_only')==='true'){
@@ -70,6 +77,8 @@ export async function PATCH(request:Request){
 }
 
 export async function DELETE(request:Request){
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
   let data:{id?:string};try{data=await request.json()}catch{return Response.json({error:'Dados inválidos'},{status:400})}
   if(!data.id)return Response.json({error:'Produto inválido'},{status:400});

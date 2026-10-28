@@ -1,3 +1,4 @@
+import {getBrand} from '@/lib/site-settings';
 import { env } from 'cloudflare:workers';
 import { db } from '@/lib/server';
 import { sendOwnerPush } from '@/lib/push';
@@ -18,6 +19,7 @@ export async function deliverOwnerNotifications(){
  const key=runtime().RESEND_API_KEY;
  if(!key)return;
  const settings=await notificationSettings();
+ const brand=await getBrand();
  if(!settings.to||!settings.from)return;
  const database=db();
  const cutoff=new Date(Date.now()-60_000).toISOString();
@@ -26,7 +28,7 @@ export async function deliverOwnerNotifications(){
   const claimed=await database.prepare("UPDATE owner_notifications SET email_attempts=email_attempts+1,last_attempt_at=? WHERE id=? AND email_status='PENDING' AND (last_attempt_at IS NULL OR last_attempt_at<?)").bind(new Date().toISOString(),item.id,cutoff).run();
   if(!claimed.meta.changes)continue;
   try{
-   const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'authorization':`Bearer ${key}`,'content-type':'application/json','Idempotency-Key':item.id},body:JSON.stringify({from:settings.from,to:[settings.to],subject:item.title,text:`${item.body}\n\nAcesse o painel: https://ericzambonini.com.br${item.link}`})});
+   const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'authorization':`Bearer ${key}`,'content-type':'application/json','Idempotency-Key':item.id},body:JSON.stringify({from:settings.from,to:[settings.to],subject:item.title,text:`${item.body}\n\nAcesse o painel: ${brand.siteUrl}${item.link}`})});
    if(!response.ok)throw Error(`Resend HTTP ${response.status}`);
    const receipt=await response.json() as {id?:string};
    await database.prepare("UPDATE owner_notifications SET email_status='SENT',email_provider_id=?,email_error=NULL WHERE id=?").bind(receipt.id||null,item.id).run();

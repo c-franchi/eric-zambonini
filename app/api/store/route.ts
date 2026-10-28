@@ -1,7 +1,10 @@
+import {requireModule} from '@/lib/licensing';
 import { db } from '@/lib/server';
 import { ensureStoreSchema } from '@/lib/store-schema';
 
 export async function GET() {
+ const moduleDenied=await requireModule('loja');if(moduleDenied)return moduleDenied;
+
   try {
     await ensureStoreSchema();
     const items = (await db().prepare('SELECT id,name,description,price_cents,stock,allow_preorder,image_key,updated_at FROM products WHERE active=1 ORDER BY name').all<{id:string;name:string;description:string;price_cents:number;stock:number;allow_preorder:number;image_key:string|null;updated_at:string}>()).results;

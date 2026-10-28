@@ -19,7 +19,7 @@ export default function AdminChat(){
     scrollOnUpdate.current=true;setMessages(current=>[...current,{id,sender:'OWNER',body:text,created_at:new Date().toISOString()}]);
     try{
       const response=await fetch('/api/admin/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sub:selected,body:text,message_id:id})});
-      if(!response.ok){const data=await response.json().catch(()=>({}));throw Error(data.error||'Não foi possível enviar.')}
+      if(!response.ok){const data=await response.json().catch(()=>({})) as {error?:string};throw Error(data.error||'Não foi possível enviar.')}
       setBody('');pendingId.current=null;setStatus('Mensagem enviada.');void fetch(`/api/admin/chat?sub=${encodeURIComponent(selected)}`,{cache:'no-store'}).then(result=>result.json()).then(data=>{if(Array.isArray(data))setMessages(data)}).catch(()=>{});
     }catch(error){setMessages(current=>current.filter(message=>message.id!==id));setStatus(error instanceof Error?error.message:'Não foi possível enviar.')}
     finally{sendingRef.current=false;setBusy(false)}

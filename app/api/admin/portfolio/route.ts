@@ -1,10 +1,15 @@
+import {requireModule} from '@/lib/licensing';
 import { db, ownerOnly, unavailable } from '@/lib/server';
 import { env } from 'cloudflare:workers';
 export async function GET() {
+ const moduleDenied=await requireModule('portfolio');if(moduleDenied)return moduleDenied;
+
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   try { return Response.json((await db().prepare('SELECT * FROM portfolio ORDER BY sort_order,title').all()).results); } catch { return unavailable(); }
 }
 export async function POST(request: Request) {
+ const moduleDenied=await requireModule('portfolio');if(moduleDenied)return moduleDenied;
+
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   try {
     const form = await request.formData(), file = form.get('file'), title = form.get('title'), category = form.get('category'), alt = form.get('alt');
@@ -17,6 +22,8 @@ export async function POST(request: Request) {
   } catch { return unavailable(); }
 }
 export async function PATCH(request: Request) {
+ const moduleDenied=await requireModule('portfolio');if(moduleDenied)return moduleDenied;
+
   if (!await ownerOnly()) return Response.json({ error: 'Acesso negado' }, { status: 403 });
   let data: { id?: string; active?: boolean; title?: string; category?: string; alt_text?: string; sort_order?: number };
   try { data = await request.json(); } catch { return Response.json({ error: 'Dados inválidos' }, { status: 400 }); }
@@ -24,6 +31,8 @@ export async function PATCH(request: Request) {
   try { const database=db();const current=await database.prepare('SELECT title,category,alt_text,sort_order,active FROM portfolio WHERE id=?').bind(data.id).first<{title:string;category:string;alt_text:string;sort_order:number;active:number}>();if(!current)return Response.json({error:'Trabalho não encontrado'},{status:404});await database.prepare('UPDATE portfolio SET title=?,category=?,alt_text=?,sort_order=?,active=? WHERE id=?').bind(data.title?.trim()??current.title,data.category?.trim()??current.category,data.alt_text?.trim()||current.alt_text,data.sort_order??current.sort_order,data.active===undefined?current.active:Number(data.active),data.id).run(); return Response.json({ ok: true }); } catch { return unavailable(); }
 }
 export async function DELETE(request:Request){
+ const moduleDenied=await requireModule('portfolio');if(moduleDenied)return moduleDenied;
+
  if(!await ownerOnly())return Response.json({error:'Acesso negado'},{status:403});
  let data:{id?:string};try{data=await request.json()}catch{return Response.json({error:'Dados inválidos'},{status:400})}
  if(!data.id)return Response.json({error:'Trabalho inválido'},{status:400});

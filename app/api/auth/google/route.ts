@@ -1,3 +1,4 @@
+import installation from '@/lib/installation';
 import { createSession, sessionCookie, verifyGoogleCredential } from '@/lib/auth';
 import { db } from '@/lib/server';
 import { isAdminEmail } from '@/lib/admin-access';
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
   if (!contentType.startsWith('application/json')) return Response.json({ error:'Formato inválido.' }, { status:415 });
   let body: { credential?:string; csrf?:string; acceptedLegal?:boolean; legalVersion?:string };
   try { body = await request.json(); } catch { return Response.json({ error:'Dados inválidos.' }, { status:400 }); }
-  const cookieCsrf = request.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith('eric_csrf='))?.slice(10);
+  const cookieCsrf = request.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${installation.cookieNamespace}_csrf=`))?.slice(installation.cookieNamespace.length+6);
   if (!body.csrf || !cookieCsrf || body.csrf !== cookieCsrf || typeof body.credential !== 'string' || body.credential.length > 10000) return Response.json({ error:'Verificação de segurança inválida.' }, { status:403 });
   if(body.acceptedLegal!==true||body.legalVersion!=='2026-09-26')return Response.json({error:'Aceite os Termos de Serviço e confirme que está ciente da Política de Privacidade.'},{status:400});
   try {

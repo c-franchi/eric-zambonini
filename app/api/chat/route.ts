@@ -1,12 +1,17 @@
+import {requireModule} from '@/lib/licensing';
 import { waitUntil } from 'cloudflare:workers';
 import { getViewer } from '@/lib/auth';
 import { db, unavailable } from '@/lib/server';
 import { notificationInsert, deliverOwnerNotifications } from '@/lib/owner-notifications';
 export async function GET() {
+ const moduleDenied=await requireModule('chat');if(moduleDenied)return moduleDenied;
+
   const viewer = await getViewer(); if (!viewer) return Response.json({ error: 'Entre com Google' }, { status: 401 });
   try { return Response.json((await db().prepare('SELECT id,sender,body,created_at FROM messages WHERE user_sub=? ORDER BY created_at DESC LIMIT 100').bind(viewer.sub).all()).results.reverse()); } catch { return unavailable(); }
 }
 export async function POST(request: Request) {
+ const moduleDenied=await requireModule('chat');if(moduleDenied)return moduleDenied;
+
   const viewer = await getViewer(); if (!viewer) return Response.json({ error: 'Entre com Google' }, { status: 401 });
   let data: { body?: string; message_id?: string }; try { data = await request.json(); } catch { return Response.json({ error: 'Dados inválidos' }, { status: 400 }); }
   if (!data.body?.trim() || data.body.length > 2000) return Response.json({ error: 'Digite uma mensagem de até 2.000 caracteres' }, { status: 400 });
