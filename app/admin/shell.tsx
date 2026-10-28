@@ -1,13 +1,13 @@
 'use client';
 /* eslint-disable @next/next/no-html-link-for-pages -- Native document navigation avoids inert SPA transitions in the installed Android app. */
 import { useState } from 'react';
-import { LayoutDashboard, CalendarDays, CalendarPlus2, MessageCircle, Scissors, Images, Wallet, Settings, UserRound, UsersRound, Menu, X, ExternalLink, LogOut, ShoppingBag } from 'lucide-react';
+import { Menu, X, ExternalLink, LogOut } from 'lucide-react';
 import { adminItems, sectionTitle } from '@/lib/admin-nav';
+import { adminIcons } from '@/lib/admin-icons';
 import NotificationCenter from './notification-center';
 import { unsubscribePush } from '@/app/unsubscribe-push';
 
-const icons=[CalendarPlus2,LayoutDashboard,CalendarDays,MessageCircle,Scissors,Images,Wallet,Settings,UserRound,UsersRound,ShoppingBag];
-const items=adminItems.map((item,index)=>({...item,icon:icons[index]}));
+const items=adminItems.map(item=>({...item,icon:adminIcons[item.slug]}));
 
 export default function AdminShell({section,children}:{section:string;children:React.ReactNode}){
   const [open,setOpen]=useState(false);
