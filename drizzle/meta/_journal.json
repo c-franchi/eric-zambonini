@@ -134,6 +134,13 @@
       "when": 1790522225726,
       "tag": "0018_smart_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1793206490264,
+      "tag": "0019_shocking_famine",
+      "breakpoints": true
     }
   ]
 }

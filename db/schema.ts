@@ -115,6 +115,9 @@ export const products = sqliteTable('products', {
   description: text('description').notNull().default(''),
   priceCents: integer('price_cents').notNull(),
   stock: integer('stock').notNull().default(0),
+  minimumStock: integer('minimum_stock').notNull().default(0),
+  unitCostCents: integer('unit_cost_cents').notNull().default(0),
+  inventoryRequestKey: text('inventory_request_key'),
   allowPreorder: integer('allow_preorder', {mode:'boolean'}).notNull().default(false),
   imageKey: text('image_key'),
   active: integer('active', {mode:'boolean'}).notNull().default(true),
@@ -169,3 +172,30 @@ export const productSaleItems = sqliteTable('product_sale_items', {
   quantity: integer('quantity').notNull(),
   isPreorder: integer('is_preorder', {mode:'boolean'}).notNull().default(false),
 }, (table) => [index('product_sale_items_sale').on(table.saleId)]);
+
+
+export const inventoryOperations = sqliteTable('inventory_operations', {
+  requestKey: text('request_key').primaryKey(),
+  productId: text('product_id').notNull().references(() => products.id),
+  kind: text('kind').notNull(),
+  quantity: integer('quantity').notNull(),
+  unitCostCents: integer('unit_cost_cents').notNull(),
+  note: text('note').notNull(),
+  actorSub: text('actor_sub').notNull(),
+  payload: text('payload').notNull(),
+  applied: integer('applied').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+});
+export const stockMovements = sqliteTable('stock_movements', {
+  id: text('id').primaryKey(),
+  productId: text('product_id').notNull().references(() => products.id),
+  requestKey: text('request_key').unique(),
+  kind: text('kind').notNull(),
+  quantityDelta: integer('quantity_delta').notNull(),
+  stockBefore: integer('stock_before').notNull(),
+  stockAfter: integer('stock_after').notNull(),
+  unitCostCents: integer('unit_cost_cents').notNull(),
+  note: text('note').notNull(),
+  actorSub: text('actor_sub'),
+  createdAt: text('created_at').notNull(),
+}, table => [index('stock_movements_product_created').on(table.productId,table.createdAt)]);
