@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   try {
     await expireUnpaidPix(db());
     await cleanupOldCancelledBookings(db());
-    const query = `SELECT b.id, b.service_id, b.date, b.time, b.name, b.phone, b.status, b.price_cents, b.price_variable, b.payment_method, b.payment_status, b.receipt_key, b.user_sub, u.email, s.name AS service_name FROM bookings b JOIN services s ON s.id = b.service_id LEFT JOIN users u ON u.sub=b.user_sub`;
+    const query = `SELECT b.id, b.service_id, b.date, b.time, b.name, b.phone, b.status, b.price_cents, b.price_variable, b.payment_method, b.payment_status, b.receipt_key, b.user_sub, u.email, s.name AS service_name, (SELECT c.id FROM service_completions c WHERE c.booking_id=b.id AND c.voided_at IS NULL) AS completion_id FROM bookings b JOIN services s ON s.id = b.service_id LEFT JOIN users u ON u.sub=b.user_sub`;
     const result = month
       ? await db().prepare(`${query} WHERE b.date >= ? AND b.date < ? ORDER BY b.date, b.time`).bind(`${month}-01`, new Date(Date.UTC(Number(month.slice(0,4)), Number(month.slice(5)), 1)).toISOString().slice(0,10)).all()
       : await db().prepare(`${query} ORDER BY b.date DESC, b.time DESC LIMIT 200`).all();
