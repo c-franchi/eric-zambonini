@@ -10,7 +10,7 @@ export async function cleanupOldCancelledBookings(database:Database){
   const cutoff=new Date(Date.now()-RETENTION_MS).toISOString();
   let removed=0;
   for(let batchNumber=0;batchNumber<10;batchNumber++){
-    const old=(await database.prepare("SELECT id,receipt_key FROM bookings WHERE status='CANCELLED' AND cancelled_at<? ORDER BY cancelled_at LIMIT 100").bind(cutoff).all<{id:string;receipt_key:string|null}>()).results;
+    const old=(await database.prepare("SELECT id,receipt_key FROM bookings WHERE status='CANCELLED' AND cancelled_at<? AND NOT EXISTS(SELECT 1 FROM service_completions c WHERE c.booking_id=bookings.id) AND NOT EXISTS(SELECT 1 FROM product_orders o WHERE o.booking_id=bookings.id) ORDER BY cancelled_at LIMIT 100").bind(cutoff).all<{id:string;receipt_key:string|null}>()).results;
     if(!old.length)break;
     const ids=old.map(item=>item.id),placeholders=ids.map(()=>'?').join(',');
     await database.batch([

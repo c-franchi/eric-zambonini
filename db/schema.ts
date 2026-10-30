@@ -199,3 +199,20 @@ export const stockMovements = sqliteTable('stock_movements', {
   actorSub: text('actor_sub'),
   createdAt: text('created_at').notNull(),
 }, table => [index('stock_movements_product_created').on(table.productId,table.createdAt)]);
+
+export const supplies = sqliteTable('supplies', {
+ id:text('id').primaryKey(), name:text('name').notNull(), unit:text('unit').notNull(),
+ stockMilli:integer('stock_milli').notNull().default(0), unitCostCents:integer('unit_cost_cents').notNull().default(0), minimumMilli:integer('minimum_milli').notNull().default(0), updatedAt:text('updated_at').notNull(),
+});
+export const serviceSupplies = sqliteTable('service_supplies', {
+ id:text('id').primaryKey(),serviceId:text('service_id').notNull().references(()=>services.id),supplyId:text('supply_id').notNull().references(()=>supplies.id),quantityMilli:integer('quantity_milli').notNull(),
+},t=>[uniqueIndex('service_supply_unique').on(t.serviceId,t.supplyId)]);
+export const serviceCompletions = sqliteTable('service_completions', {
+ id:text('id').primaryKey(),bookingId:text('booking_id').notNull().references(()=>bookings.id),revenueCents:integer('revenue_cents').notNull(),createdAt:text('created_at').notNull(),actor:text('actor').notNull(),voidedAt:text('voided_at'),voidReason:text('void_reason'),
+});
+export const supplyMovements = sqliteTable('supply_movements', {
+ id:text('id').primaryKey(),supplyId:text('supply_id').notNull().references(()=>supplies.id),completionId:text('completion_id').references(()=>serviceCompletions.id),quantityMilli:integer('quantity_milli').notNull(),unitCostCents:integer('unit_cost_cents').notNull(),kind:text('kind').notNull(),note:text('note').notNull(),actor:text('actor').notNull(),createdAt:text('created_at').notNull(),
+});
+export const cashEntries = sqliteTable('cash_entries', {
+ id:text('id').primaryKey(),kind:text('kind').notNull(),amountCents:integer('amount_cents').notNull(),date:text('date').notNull(),category:text('category').notNull(),note:text('note').notNull(),sourceKey:text('source_key'),actor:text('actor').notNull(),createdAt:text('created_at').notNull(),voidedAt:text('voided_at'),voidReason:text('void_reason'),
+},t=>[uniqueIndex('cash_source_unique').on(t.sourceKey)]);

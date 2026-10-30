@@ -14,6 +14,8 @@ export async function DELETE(request: Request) {
     const booking = await database.prepare('SELECT status,receipt_key,payment_status FROM bookings WHERE id=?').bind(id).first<{ status: string; receipt_key: string | null; payment_status: string }>();
     if (!booking) return Response.json({ error: 'Agendamento não encontrado.' }, { status: 404 });
     if (booking.status !== 'CANCELLED') return Response.json({ error: 'Só é possível excluir agendamentos cancelados.' }, { status: 409 });
+    const completion=await database.prepare('SELECT 1 FROM service_completions WHERE booking_id=? LIMIT 1').bind(id).first();
+    if(completion)return Response.json({error:'O histórico de consumo deste atendimento deve ser preservado.'},{status:409});
     const linkedOrder = await database.prepare('SELECT 1 AS found FROM product_orders WHERE booking_id=? LIMIT 1').bind(id).first();
     if (linkedOrder) return Response.json({ error: 'Este agendamento está vinculado a um pedido da loja e não pode ser excluído.' }, { status: 409 });
     await database.batch([
@@ -50,6 +52,8 @@ export async function PATCH(request: Request) {
   if (!data.id || !['cancel','paid','quote','edit'].includes(data.action || '') || data.action==='quote'&&(!Number.isInteger(data.price_cents)||data.price_cents!<=0||data.price_cents!>10000000)) return Response.json({ error: 'Ação inválida' }, { status: 400 });
   try {
     const database = db();
+    const locked=await database.prepare('SELECT 1 FROM service_completions WHERE booking_id=? AND voided_at IS NULL').bind(data.id).first();
+    if(locked&&['cancel','edit','quote'].includes(data.action||''))return Response.json({error:'Estorne a conclusão em Insumos e serviços antes de editar ou cancelar.'},{status:409});
     const row = await database.prepare('SELECT status,service_id,payment_method,payment_status,price_cents,price_variable,receipt_key,user_sub,date,time FROM bookings WHERE id=?').bind(data.id).first<{status:string;service_id:string;payment_method:string;payment_status:string;price_cents:number;price_variable:number;receipt_key:string|null;user_sub:string|null;date:string;time:string}>();
     if (!row) return Response.json({ error: 'Reserva não encontrada' }, { status: 404 });
     if (data.action === 'cancel') {

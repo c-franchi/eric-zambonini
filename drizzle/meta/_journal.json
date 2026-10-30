@@ -141,6 +141,13 @@
       "when": 1793206490264,
       "tag": "0019_shocking_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1793323507039,
+      "tag": "0020_graceful_zaladane",
+      "breakpoints": true
     }
   ]
 }

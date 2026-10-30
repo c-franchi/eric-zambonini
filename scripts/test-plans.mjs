@@ -27,7 +27,9 @@ function load(file){
 const {canUse,canOpenSection,apiModule,plans}=load('lib/plans.ts');
 assert.equal(canUse('agenda','estoque'),false);assert.equal(canUse('agenda','loja'),false);assert.equal(canUse('agenda','financeiro'),false);
 for(const plan of ['gestao','premium'])for(const m of ['loja','estoque','financeiro'])assert.equal(canUse(plan,m),true);
-assert.deepEqual(plans.premium.modules,plans.gestao.modules);
+assert.deepEqual(plans.premium.modules.filter(m=>m!=='insumos'),plans.gestao.modules);
+assert.equal(canUse('agenda','insumos'),false);assert.equal(canUse('gestao','insumos'),false);assert.equal(canUse('premium','insumos'),true);
+assert.equal(canOpenSection('premium','insumos'),true);assert.equal(apiModule('/api/admin/supplies'),'insumos');
 assert.equal(canOpenSection('agenda','assinatura'),true);assert.equal(canOpenSection('agenda','estoque'),false);
 const installation=JSON.parse(readFileSync(resolve(root,'config/installation.json'),'utf8'));
 const operatorEmail=installation.platformAdminEmails[0];
@@ -75,6 +77,7 @@ for(const plan of ['agenda','gestao','premium']){
  const html=renderToStaticMarkup(createElement(SiteProvider,{brand:defaultBrand,modules:plans[plan].modules},createElement(Shell,{section:'agendar',allowedSections:allowed},'Painel de teste')));
  assert.match(html,/Painel de teste/);
  assert.equal(html.includes('href="/admin/estoque"'),plan!=='agenda');
+ assert.equal(html.includes('href="/admin/insumos"'),plan==='premium');
  assert.equal(html.includes('href="/admin/loja"'),plan!=='agenda');
  assert.match(html,/href="\/admin\/assinatura"/);
 }
@@ -89,3 +92,18 @@ const saved=JSON.parse(sql.prepare("SELECT value FROM settings WHERE key='instal
 assert.equal(saved.name,'Negócio de teste');assert.equal(saved.plan,undefined);assert.equal(saved.platformAdminEmails,undefined);
 assert.equal((await route.PUT(request('premium'))).status,403);
 console.log('PASS: client can personalize the site without changing its plan or administrator roles.');
+
+const suppliesRoute=load('app/api/admin/supplies/route.ts'),financeRoute=load('app/api/admin/finance/route.ts');
+sql.prepare("UPDATE settings SET value=? WHERE key='installation_license'").run('{"plan":"premium"}');
+viewer=null;
+assert.equal((await suppliesRoute.POST(new Request('https://test.example/api/admin/supplies',{method:'POST',body:'{}'}))).status,403);
+assert.equal((await financeRoute.POST(new Request('https://test.example/api/admin/finance',{method:'POST',body:'{}'}))).status,403);
+viewer={sub:'google-client',email:clientEmail};
+assert.equal((await suppliesRoute.POST(new Request('https://test.example/api/admin/supplies',{method:'POST',headers:{origin:'https://evil.example'},body:'{}'}))).status,403);
+assert.equal((await financeRoute.POST(new Request('https://test.example/api/admin/finance',{method:'POST',headers:{origin:'https://evil.example'},body:'{}'}))).status,403);
+sql.prepare("UPDATE settings SET value=? WHERE key='installation_license'").run('{"plan":"gestao"}');
+assert.equal((await suppliesRoute.GET()).status,403);
+sql.prepare("UPDATE settings SET value=? WHERE key='installation_license'").run('{"plan":"premium"}');
+assert.equal((await suppliesRoute.POST(new Request('https://test.example/api/admin/supplies',{method:'POST',body:JSON.stringify({action:'move',quantity:'-1'})}))).status,400);
+assert.equal((await financeRoute.POST(new Request('https://test.example/api/admin/finance',{method:'POST',body:JSON.stringify({id:'test',amount:'-10'})}))).status,400);
+console.log('PASS: management endpoints reject anonymous requests, cross-origin writes, out-of-plan access and invalid amounts.');

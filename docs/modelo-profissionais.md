@@ -8,7 +8,7 @@ A instalação Eric é a primeira configuração do mesmo modelo reutilizável. 
 - Gestão e Vendas: todos os anteriores, financeiro, loja/vendas e estoque de produtos.
 - Premium: mesmas ferramentas de Gestão e Vendas e serviço inicial de personalização/conteúdo conforme escopo comercial. Não inclui produção mensal de conteúdo.
 - Personalização da apresentação e edição pelo profissional estão disponíveis em todos os planos.
-- Consumo de insumos por serviço não foi implementado nesta versão.
+- Premium inclui insumos por serviço, conclusão com baixa e margem estimada. Gestão e Premium incluem caixa de receitas e despesas. Consulte `docs/gestao-completa.md`.
 
 `/admin/assinatura` apresenta o plano e as ferramentas. Somente as contas `platformAdminEmails` em `config/installation.json`, autenticadas com Google, podem aplicar um plano. A alteração exige origem válida, justificativa e deixa histórico em `settings` (`license_audit:*`). Os administradores do profissional não podem liberar o próprio plano. Mudanças de plano preservam os registros existentes e bloqueiam telas e APIs de módulos não incluídos. Nenhum menu de agendamento/pagamento básico necessário ao atendimento é tratado como relatório financeiro premium.
 

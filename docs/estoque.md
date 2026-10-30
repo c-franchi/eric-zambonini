@@ -20,4 +20,4 @@ Build com o helper oficial Sites. A checagem global de tipos já tem pendências
 
 ## Próximas etapas
 
-Consumo de insumos por serviço, encerramento de atendimentos com baixa de materiais, caixa de despesas e ligação com planos/assinaturas são módulos separados. A cobrança automática do funil deve aguardar validação de entrega e configuração segura de implementação e mensalidade. Não cobrar pelos módulos ainda não entregues.
+Consumo de insumos por serviço, conclusão com baixa de materiais e caixa de despesas foram implementados em módulos separados na atualização 0020; consulte `docs/gestao-completa.md`. A cobrança do funil continua separada e depende da configuração da contratação; esta atualização não habilita cobranças nem provisionamento automático.

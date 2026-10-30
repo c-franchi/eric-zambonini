@@ -15,6 +15,7 @@ export const adminIcons = {
   usuarios: UsersRound,
   loja: ShoppingBag,
   estoque: Package,
+  insumos: Package,
   identidade: Palette,
   assinatura: BadgeCheck,
 } satisfies Record<(typeof adminItems)[number]['slug'], LucideIcon>;
