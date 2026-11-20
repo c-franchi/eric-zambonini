@@ -1,0 +1,22 @@
+{
+  "name": "Eric Zambonini",
+  "tagline": "Beleza masculina e feminina",
+  "bio": "Eric Zambonini reúne mais de 25 anos de atuação em serviços masculinos e femininos, unindo técnica e atenção aos detalhes.",
+  "yearsExperience": 25,
+  "logo": "/images/eric-zambonini-horizontal-v2.png",
+  "heroLogo": "/images/eric-zambonini-logo.png",
+  "heroImage": "/images/hero-eric.webp",
+  "whatsapp": "5516997762019",
+  "instagram": "https://www.instagram.com/zamboninieric/",
+  "facebook": "https://www.facebook.com/search/top?q=Eric%20Zambonini",
+  "reviewUrl": "https://g.page/r/CWECIhz8246XECE/review",
+  "siteUrl": "https://ericzambonini.com.br",
+  "examples": [
+    {"image":"/images/corte2.webp","title":"Corte masculino clássico"},
+    {"image":"/images/corte3.webp","title":"Corte texturizado"},
+    {"image":"/images/corte4.webp","title":"Alisamento e finalização"},
+    {"image":"/images/corte5.webp","title":"Design de sobrancelhas"},
+    {"image":"/images/corte6.webp","title":"Degradê moderno"},
+    {"image":"/images/corte7.webp","title":"Corte social"}
+  ]
+}

@@ -1,0 +1,14 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { useConfirmAction } from '@/app/confirm-action';
+
+export default function BookingActions({id,serviceId,bookingDate,bookingTime}:{id:string;serviceId:string;bookingDate:string;bookingTime:string}){
+  const [open,setOpen]=useState(false),[date,setDate]=useState(''),[time,setTime]=useState(''),[times,setTimes]=useState<string[]>([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[chatRequired,setChatRequired]=useState(false),[chatAction,setChatAction]=useState<'cancel'|'reschedule'>('cancel');
+  const {confirm,dialog}=useConfirmAction();
+  useEffect(()=>{if(!open||!date)return;let active=true;setTime('');fetch(`/api/availability?service=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}&exclude=${encodeURIComponent(id)}`).then(r=>r.json() as Promise<{times?:string[]}>).then(data=>{if(active)setTimes(Array.isArray(data.times)?data.times:[])}).catch(()=>{if(active)setTimes([])});return()=>{active=false}},[date,id,open,serviceId]);
+  async function act(action:'cancel'|'reschedule'){
+    if(action==='cancel'&&!await confirm({title:'Cancelar agendamento?',description:'O horário será liberado para outro cliente. Deseja continuar?',confirmLabel:'Cancelar agendamento',danger:true}))return;
+    setBusy(true);setMessage('');setChatRequired(false);try{const r=await fetch('/api/cliente/bookings',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,action,date,time})});const d:{error?:string;code?:string}=await r.json();if(!r.ok){if(d.code==='TIME_LIMIT_REACHED'||d.code==='CONTACT_TO_CANCEL'){setChatRequired(true);setChatAction(action)}throw Error(d.error||'Falha ao atualizar')}window.location.reload()}catch(e){setMessage(e instanceof Error?e.message:'Falha ao atualizar')}finally{setBusy(false)}
+  }
+  return <>{dialog}<div className="booking-actions"><button disabled={busy} type="button" onClick={()=>setOpen(!open)}>Remarcar</button><button disabled={busy} type="button" onClick={()=>void act('cancel')}>Cancelar</button>{open&&<div className="stack"><label>Nova data<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>Horários disponíveis<select value={time} onChange={e=>setTime(e.target.value)}><option value="">{times.length?'Selecione o horário':'Nenhum horário nessa data'}</option>{times.map(value=><option key={value} value={value}>{value}</option>)}</select></label><button disabled={!date||!time||busy} type="button" onClick={()=>void act('reschedule')}>Confirmar remarcação</button></div>}{message&&<div className="booking-action-message" role="alert"><p>{message}</p>{chatRequired&&<a className="button outline" href="#chat">{`${chatAction==='cancel'?'Solicitar cancelamento':'Solicitar alteração'} no chat · ${bookingDate.split('-').reverse().join('/')} às ${bookingTime}`}</a>}</div>}</div></>;
+}

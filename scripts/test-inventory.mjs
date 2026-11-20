@@ -1,0 +1,37 @@
+import { DatabaseSync } from 'node:sqlite';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+import { inventoryStatements,validInventoryOperation,operationPayload,parseMoneyCents } from '../lib/inventory-operations.ts';
+const sql=new DatabaseSync(':memory:');
+sql.exec(`PRAGMA foreign_keys=ON;CREATE TABLE products(id TEXT PRIMARY KEY,name TEXT,stock INTEGER NOT NULL,price_cents INTEGER DEFAULT 1000,active INTEGER DEFAULT 1,updated_at TEXT);INSERT INTO products(id,name,stock) VALUES('existing','Produto existente',7);`);
+sql.exec(readFileSync(new URL('../drizzle/0019_shocking_famine.sql',import.meta.url),'utf8'));
+assert.equal(sql.prepare("SELECT stock FROM products WHERE id='existing'").get().stock,7,'migration preserves stock');
+assert.equal(sql.prepare('SELECT count(*) AS count FROM stock_movements').get().count,0,'no invented history');
+const statement=(query,args=[])=>({query,args,bind(...values){return statement(query,values)}});
+const database={prepare:statement,batch:async statements=>{sql.exec('BEGIN');try{const results=statements.map(item=>sql.prepare(item.query).run(...item.args));sql.exec('COMMIT');return results;}catch(error){sql.exec('ROLLBACK');throw error;}}};
+const quantity=()=>sql.prepare("SELECT stock FROM products WHERE id='existing'").get().stock;
+const operation={request_key:'test-request-00001',product_id:'existing',kind:'PURCHASE',quantity:3,unit_cost_cents:1500,note:'Compra de teste'};
+assert(validInventoryOperation(operation));assert(!validInventoryOperation({...operation,quantity:1.5}));assert(!validInventoryOperation({...operation,quantity:-1}));assert(validInventoryOperation({...operation,kind:'COUNT',quantity:0}));assert(!validInventoryOperation({...operation,note:' '}));assert.equal(parseMoneyCents('12,50'),1250);assert.equal(parseMoneyCents('12.50'),1250);assert.equal(parseMoneyCents('1.234,56'),123456);assert.equal(parseMoneyCents('NaN'),null);
+await database.batch(inventoryStatements(database,operation,'test-admin','2026-10-28T12:00:00Z'));
+assert.equal(quantity(),10);assert.equal(sql.prepare("SELECT unit_cost_cents FROM products WHERE id='existing'").get().unit_cost_cents,1500);
+await database.batch(inventoryStatements(database,operation,'test-admin','2026-10-28T12:01:00Z'));assert.equal(quantity(),10,'retry cannot duplicate stock');
+assert.equal(sql.prepare('SELECT count(*) AS count FROM stock_movements').get().count,1);
+await database.batch(inventoryStatements(database,{...operation,quantity:100},'test-admin','2026-10-28T12:02:00Z'));assert.equal(quantity(),10,'same key with changed payload cannot mutate');
+assert.notEqual(operationPayload(operation),operationPayload({...operation,quantity:100}));
+await assert.rejects(database.batch(inventoryStatements(database,{...operation,request_key:'test-request-00002',kind:'LOSS',quantity:11},'test-admin','2026-10-28T12:03:00Z')),/Estoque insuficiente/);
+assert.equal(quantity(),10);assert.equal(sql.prepare("SELECT count(*) AS count FROM inventory_operations WHERE request_key='test-request-00002'").get().count,0,'failed batch rolls back idempotency record');
+// Existing checkout and cancellation code changes stock directly. Both must appear in history.
+sql.prepare("UPDATE products SET stock=stock-2 WHERE id='existing'").run();assert.equal(quantity(),8);
+sql.prepare("UPDATE products SET stock=stock+2 WHERE id='existing'").run();assert.equal(quantity(),10);
+assert.equal(sql.prepare("SELECT count(*) AS count FROM stock_movements WHERE kind='SYSTEM'").get().count,2);
+const count={...operation,request_key:'test-request-00003',kind:'COUNT',quantity:4};await database.batch(inventoryStatements(database,count,'test-admin','2026-10-28T12:04:00Z'));assert.equal(quantity(),4);
+// Metadata edits preserve concurrently reserved stock when the user did not edit quantity.
+sql.prepare("UPDATE products SET stock=stock-1 WHERE id='existing'").run();assert.equal(quantity(),3);
+const update=sql.prepare("UPDATE products SET name=?,stock=CASE WHEN ? THEN CASE WHEN stock=? THEN ? ELSE -1 END ELSE stock END WHERE id=?");
+update.run('Novo nome',0,4,4,'existing');assert.equal(quantity(),3);
+assert.throws(()=>update.run('Outro nome',1,4,8,'existing'),/Estoque insuficiente/);assert.equal(quantity(),3);
+sql.prepare("UPDATE products SET active=0 WHERE id='existing'").run();assert.equal(quantity(),3,'visibility cannot overwrite stock');
+assert.throws(()=>sql.prepare("UPDATE products SET stock=-1 WHERE id='existing'").run(),/Estoque insuficiente/);
+assert.equal(sql.prepare('PRAGMA foreign_key_check').all().length,0);
+console.log('PASS: additive migration, preserved balances, no fabricated history, entry, loss, counted stock, retry protection, transactional rollback, automatic order history and concurrent catalogue edits.');
+sql.close();

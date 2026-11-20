@@ -1,0 +1,1 @@
+ALTER TABLE `bookings` ADD `price_variable` integer DEFAULT false NOT NULL;

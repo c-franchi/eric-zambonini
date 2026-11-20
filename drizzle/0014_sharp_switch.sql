@@ -1,0 +1,1 @@
+ALTER TABLE `owner_notifications` ADD `email_provider_id` text;
