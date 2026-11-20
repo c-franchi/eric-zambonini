@@ -1,3 +1,13 @@
+# Eric Zambonini — código completo e base para templates
+
+Este repositório contém o código da versão 74 do Sites e seu histórico original. Para reutilização no Lovable, comece pelo [guia de templates](docs/lovable-templates.md) e pelo [modelo de profissionais](docs/modelo-profissionais.md). Os scripts estão em `scripts/`, com migrações em `drizzle/` e recursos de build em `build/`.
+
+A aplicação usa React, TypeScript, Vinext e Cloudflare D1/R2. A adaptação ao ambiente do Lovable exige avaliar as integrações de servidor, autenticação, banco e armazenamento. A transferência ao GitHub não configura sincronização automática com o Sites.
+
+## Registro histórico da migração inicial
+
+O texto abaixo descreve o começo da migração, não o estado atual de publicação ou a lista atual de funcionalidades.
+
 # Eric Zambonini — migração para Sites
 
 Este é o novo projeto independente do Lovable e do Supabase. A aplicação antiga continua intacta em `c-franchi/Agendaaipro` enquanto os fluxos faltantes são reconstruídos e validados.
